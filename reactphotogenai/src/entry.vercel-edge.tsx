@@ -13,10 +13,10 @@ import {
 } from "@builder.io/qwik-city/middleware/vercel-edge";
 import qwikCityPlan from "@qwik-city-plan";
 import { manifest } from "@qwik-client-manifest";
-import render from "./entry.ssr";
+import render from "./entry.ssr.tsx";
 
 declare global {
   interface QwikCityPlatform extends PlatformVercel {}
 }
 
-export default createQwikCity({ render, qwikCityPlan, manifest });
+export default createQwikCity({ render: render as any, qwikCityPlan, manifest });
