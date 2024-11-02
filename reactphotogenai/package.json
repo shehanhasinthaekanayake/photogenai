@@ -4,13 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "tsc -b && vite build",
+    "build.server": "vite build -c adapters/vercel-edge/vite.config.ts",
+    "deploy": "vercel deploy",
+    "dev": "vite",
     "preview": "serve dist"
   },
   "devDependencies": {
     "serve": "^14.2.4",
     "typescript": "~5.6.2",
+    "vercel": "^29.1.1",
     "vite": "^5.4.10"
   },
   "dependencies": {
