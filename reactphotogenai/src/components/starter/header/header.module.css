@@ -1,0 +1,96 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: inline-block;
+}
+.logo a {
+  display: block;
+}
+
+.header ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 30px;
+}
+
+.header li {
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.header li a {
+  display: inline-block;
+  padding: 0;
+  text-decoration: none;
+}
+
+@media (min-width: 450px) {
+  .header li {
+    display: inline-block;
+  }
+}
+
+header {
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-reflex: rgba(255, 255, 255, 0.1);
+  --glass-backdrop: blur(16px);
+  --glass-background: rgba(255, 255, 255, 0.05);
+}
+
+header > div {
+  background: linear-gradient(
+    135deg,
+    var(--glass-background),
+    var(--glass-reflex)
+  );
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-border);
+}
+
+/* Add subtle shine effect */
+header > div::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Optional: Enhance glass effect on modern browsers */
+@supports (backdrop-filter: blur(16px)) {
+  header > div {
+    background: var(--glass-background);
+    backdrop-filter: var(--glass-backdrop);
+  }
+}
+
+/* Optional: Add subtle animation on scroll */
+@keyframes headerScroll {
+  from {
+    backdrop-filter: blur(10px);
+  }
+  to {
+    backdrop-filter: blur(15px);
+  }
+}
+
+header.scrolled {
+  animation: headerScroll 0.3s forwards;
+}
