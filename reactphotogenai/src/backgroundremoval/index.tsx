@@ -50,17 +50,43 @@ import animationData from './new sample vids/Animation - 1736837185654.json'
 // import video2 from './AnimateDiff22_00012-audio.mp4'
 import { useRef, useEffect, useState } from 'react';
 
+interface VideoItem {
+  id: number;
+  image: string;
+  video: string;
+}
+
+interface VideoBundle {
+  bundleId: number;
+  video1: string;
+  items: VideoItem[];
+}
+
+interface VideoState {
+  currentSelection: {
+    bundleId: number;
+    itemId: number;
+  };
+  video1: string | null;
+  video2: string | null;
+  image1: string;
+  image2: string;
+  image3: string;
+  bundles: VideoBundle[];
+}
+
+
 const BgReplace = () => {
 
-  const [video1, setVideo1] = useState(video1Import);
-  const [video2, setVideo2] = useState(video2Import);
+  const [video1, setVideo1] = useState<string>(video1Import);
+  const [video2, setVideo2] = useState<string>(video2Import);
   const [syncing, setSyncing] = useState(false);
 
   const [currentSelection, setCurrentSelection] = useState(1);
 
-  const video1Ref = useRef(null);
-  const video2Ref = useRef(null);
-  const syncTimeoutRef = useRef(null);
+  const video1Ref = useRef<HTMLVideoElement>(null!); // Assert non-null
+  const video2Ref = useRef<HTMLVideoElement>(null!); // Assert non-null  
+  const syncTimeoutRef = useRef<number | null>(null);
 
   const [progress, setProgress] = useState(0);
 
@@ -73,7 +99,7 @@ const BgReplace = () => {
     }
   };
 
-  const [videoState, setVideoState] = useState({
+  const [videoState, setVideoState] = useState<VideoState>({
     currentSelection: { bundleId: 0, itemId: 0 },
     video1: null,
     video2: null,
@@ -120,88 +146,90 @@ const BgReplace = () => {
     ],
   });
 
-  const handleClick = (bundleId: any, itemId: any, video: any) => {
-    // Pause both videos before switching
+
+
+  const handleClick = (bundleId: number, itemId: number) => {
     if (video1Ref.current && video2Ref.current) {
-      setSyncing(true)
+      setSyncing(true);
+
+      // Pause both videos
       video1Ref.current.pause();
       video2Ref.current.pause();
-      const currentTime = video1Ref.current.currentTime; // Get the current playback time
 
-      console.log("stop the video")
-      // Pause videos
+      const currentTime = video1Ref.current.currentTime;
 
-      // Set the state with the new selection
-      setVideoState((prevState: any) => ({
+      console.log("stop the video");
+
+      // Update state with the new selection
+      setVideoState((prevState) => ({
         ...prevState,
         currentSelection: { bundleId, itemId },
-        video1: videoState?.bundles?.[bundleId].video1,
-        video2: videoState?.bundles?.[bundleId].items?.[itemId].video,
-        image1: videoState?.bundles?.[bundleId].items?.[0].image,
-        image2: videoState?.bundles?.[bundleId].items?.[1].image,
-        image3: videoState?.bundles?.[bundleId].items?.[2].image,
+        video1: prevState.bundles[bundleId].video1,
+        video2: prevState.bundles[bundleId].items[itemId - 1]?.video || null,
+        image1: prevState.bundles[bundleId].items[0]?.image || '',
+        image2: prevState.bundles[bundleId].items[1]?.image || '',
+        image3: prevState.bundles[bundleId].items[2]?.image || '',
       }));
 
-      // Set the new videos
-      setVideo1(videoState?.bundles?.[bundleId].video1);
-      setVideo2(videoState?.bundles?.[bundleId].items?.[itemId].video);
+      // Update the videos
+      setVideo1(videoState.bundles[bundleId].video1);
+      setVideo2(videoState.bundles[bundleId].items[itemId - 1]?.video || '');
 
-      // Delay updating the video refs to allow React to render the new videos
-
+      // Delay updating the video refs
       setTimeout(() => {
         if (video1Ref.current && video2Ref.current) {
-
-          // Sync the current time for both videos
           video1Ref.current.currentTime = currentTime;
           video2Ref.current.currentTime = currentTime;
 
-          // Play both videos
           video1Ref.current.play();
           video2Ref.current.play();
-          setSyncing(false)
-
+          setSyncing(false);
         }
-      }, 1000); // Small delay to ensure refs are updated
+      }, 1000);
     }
   };
 
 
-  const setSubVideo1 = (itemId: any) => {
-    setSyncing(true)
-    
+
+
+  const setSubVideo1 = (itemId: number) => {
+    setSyncing(true);
+
     if (video1Ref.current && video2Ref.current) {
-      
       video1Ref.current.pause();
       video2Ref.current.pause();
     }
-    setVideoState((prevState: any) => ({
+
+    setVideoState((prevState) => ({
       ...prevState,
-      currentSelection: { bundleId: prevState.currentSelection.bundleId, itemId }
+      currentSelection: { bundleId: prevState.currentSelection.bundleId, itemId },
     }));
-    setVideo2(videoState?.bundles?.[videoState?.currentSelection?.bundleId]?.items?.[itemId]?.video)
-    
+
+    const selectedVideo =
+      videoState?.bundles?.[videoState.currentSelection.bundleId]?.items?.find(
+        (item) => item.id === itemId
+      )?.video || ''; // Provide an empty string if `null`
+
+    setVideo2(selectedVideo);
+
+
     if (video1Ref.current && video2Ref.current) {
-      const currentTime = video1Ref.current.currentTime; // Get the current playback time
+      const currentTime = video1Ref.current.currentTime;
 
-     // Sync the current time for both videos
-     video1Ref.current.currentTime = currentTime;
-     video2Ref.current.currentTime = currentTime;
-
+      video1Ref.current.currentTime = currentTime;
+      video2Ref.current.currentTime = currentTime;
     }
-     setTimeout(() => {
-       if (video1Ref.current && video2Ref.current) {
-         
-   
 
-        // Play both videos
+    setTimeout(() => {
+      if (video1Ref.current && video2Ref.current) {
         video1Ref.current.play();
         video2Ref.current.play();
-        setSyncing(false)
-
+        setSyncing(false);
       }
-    }, 1000); // Small delay to ensure refs are updated
+    }, 1000);
+  };
 
-  }
+
 
   useEffect(() => {
     setVideo1(videoState?.bundles?.[0].video1)
@@ -212,24 +240,30 @@ const BgReplace = () => {
   useEffect(() => {
     const handleSync = () => {
       if (video1Ref.current && video2Ref.current) {
+
         const currentTime1 = video1Ref.current.currentTime;
+
         const currentTime2 = video2Ref.current.currentTime;
 
         if (Math.abs(currentTime1 - currentTime2) > 0.15) {
+
           video2Ref.current.currentTime = currentTime1 + 0.1;
         }
 
         // Update progress based on video1's current time
+
         const duration = video1Ref.current.duration || 1; // Avoid division by zero
         setProgress((currentTime1 / duration) * 100);
       }
     };
 
     const handlePlay = () => {
+
       video2Ref.current?.play();
     };
 
     const handlePause = () => {
+
       video2Ref.current?.pause();
     };
 
@@ -237,15 +271,21 @@ const BgReplace = () => {
 
     const handleEnd = () => {
       if (video1Ref.current && video2Ref.current) {
+
         video1Ref.current.pause();
+
         video2Ref.current.pause();
 
         // Wait for 2 seconds before restarting
         setTimeout(() => {
+
           video1Ref.current.currentTime = 0;
+
           video2Ref.current.currentTime = 0;
 
+
           video1Ref.current.play();
+
           video2Ref.current.play();
         }, 2000);
       }
@@ -257,24 +297,35 @@ const BgReplace = () => {
       const throttledSync = () => {
         if (syncTimeoutRef.current) return;
 
+
         syncTimeoutRef.current = setTimeout(() => {
           handleSync();
           syncTimeoutRef.current = null;
         }, 200); // Adjust the interval as needed
       };
 
+
       video1.addEventListener("timeupdate", throttledSync);
+
       video1.addEventListener("play", handlePlay);
+
       video1.addEventListener("pause", handlePause);
+
       video1.addEventListener("ended", handleEnd);
+
 
       video2Ref.current.addEventListener("ended", handleEnd);
 
       return () => {
+
         video1.removeEventListener("timeupdate", throttledSync);
+
         video1.removeEventListener("play", handlePlay);
+
         video1.removeEventListener("pause", handlePause);
+
         video1.removeEventListener("ended", handleEnd);
+
 
         video2Ref.current.removeEventListener("ended", handleEnd);
 
@@ -398,22 +449,22 @@ const BgReplace = () => {
           </div>
 
           <div className="flex flex-wrap flex-row w-1/2 rounded-lg overflow-hidden">
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(0, 0, 0)}>
+            <div className="w-1/2 p-1 relative" onClick={() => handleClick(0, 0)}>
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1657662960615-8cbbda110742?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 1</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 1</span>
             </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(1, 0, 1)}>
+            <div className="w-1/2 p-1 relative" onClick={() => handleClick(1, 0)}>
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1622649440998-772d29680c57?q=80&w=1935&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 2</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 2</span>
             </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(2, 0, 1)}>
+            <div className="w-1/2 p-1 relative" onClick={() => handleClick(2, 0)}>
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1713907908481-ad7a7b0d1085?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 3</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 3</span>
             </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(3, 0, 1)}>
+            <div className="w-1/2 p-1 relative" onClick={() => handleClick(3, 0)}>
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1654897385787-be5a68dfdb88?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 4</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 4</span>
