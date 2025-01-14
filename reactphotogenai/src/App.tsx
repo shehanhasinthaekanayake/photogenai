@@ -9,7 +9,7 @@ function App() {
     <Routes>
       {/* Define the routes */}
       <Route path="/architecture" element={<Architecture />} />
-      <Route path="/bg-replace" element={<BgReplace />} />
+      <Route path="/" element={<BgReplace />} />
     </Routes>
   </Router>
   );
