@@ -18,9 +18,9 @@ import video2BackgroundImport from './new sample vids/video1/istockphoto-1297470
 import video3BackgroundImport from './new sample vids/video1/transparent-background-4k-empty-grid-checkered-layout-wallpaper-free-vector.jpg'
 
 import videoOriginal2Import from './new sample vids/video2/original video - Made with Clipchamp.mp4'
-import video4Import from './new sample vids/video2/background applied - Made with Clipchamp.mp4'
-import video5Import from './new sample vids/video2/removed background video.mp4'
-import video6Import from './new sample vids/video2/green screen AnimateDiff22_00036.mp4'
+import video4Import from './new sample vids/video2/green screen AnimateDiff22_00036.mp4'
+import video5Import from './new sample vids/video2/background applied - Made with Clipchamp.mp4'
+import video6Import from './new sample vids/video2/removed background video.mp4'
 import video4BackgroundImport from './new sample vids/video2/green-screen-8k-ultra-hd-plus-free-photo.jpg'
 import video5BackgroundImport from './new sample vids/video2/nikolai-lehmann-2Evzm2fwRH8-unsplash (1).jpg'
 import video6BackgroundImport from './new sample vids/video2/transparent-background-4k-empty-grid-checkered-layout-wallpaper-free-vector.jpg'
@@ -111,36 +111,36 @@ const BgReplace = () => {
         bundleId: 0,
         video1: videoOriginal1Import,
         items: [
-          { id: 1, image: video1BackgroundImport, video: video1Import },
-          { id: 2, image: video2BackgroundImport, video: video2Import },
-          { id: 3, image: video3BackgroundImport, video: video3Import },
+          { id: 0, image: video1BackgroundImport, video: video1Import },
+          { id: 1, image: video2BackgroundImport, video: video2Import },
+          { id: 2, image: video3BackgroundImport, video: video3Import },
         ],
       },
       {
         bundleId: 1,
         video1: videoOriginal2Import,
         items: [
-          { id: 1, image: video4BackgroundImport, video: video4Import },
-          { id: 2, image: video5BackgroundImport, video: video5Import },
-          { id: 3, image: video6BackgroundImport, video: video6Import },
+          { id: 0, image: video4BackgroundImport, video: video4Import },
+          { id: 1, image: video5BackgroundImport, video: video5Import },
+          { id: 2, image: video6BackgroundImport, video: video6Import },
         ],
       },
       {
         bundleId: 2,
         video1: videoOriginal3Import,
         items: [
-          { id: 1, image: video7BackgroundImport, video: video7Import },
-          { id: 2, image: video8BackgroundImport, video: video8Import },
-          { id: 3, image: video9BackgroundImport, video: video9Import },
+          { id: 0, image: video7BackgroundImport, video: video7Import },
+          { id: 1, image: video8BackgroundImport, video: video8Import },
+          { id: 2, image: video9BackgroundImport, video: video9Import },
         ],
       },
       {
         bundleId: 3,
         video1: videoOriginal4Import,
         items: [
-          { id: 1, image: video10BackgroundImport, video: video10Import },
-          { id: 2, image: video11BackgroundImport, video: video11Import },
-          { id: 3, image: video12BackgroundImport, video: video12Import },
+          { id: 0, image: video10BackgroundImport, video: video10Import },
+          { id: 1, image: video11BackgroundImport, video: video11Import },
+          { id: 2, image: video12BackgroundImport, video: video12Import },
         ],
       },
     ],
@@ -165,7 +165,7 @@ const BgReplace = () => {
         ...prevState,
         currentSelection: { bundleId, itemId },
         video1: prevState.bundles[bundleId].video1,
-        video2: prevState.bundles[bundleId].items[itemId - 1]?.video || null,
+        video2: prevState.bundles[bundleId].items[itemId]?.video || null,
         image1: prevState.bundles[bundleId].items[0]?.image || '',
         image2: prevState.bundles[bundleId].items[1]?.image || '',
         image3: prevState.bundles[bundleId].items[2]?.image || '',
@@ -173,7 +173,7 @@ const BgReplace = () => {
 
       // Update the videos
       setVideo1(videoState.bundles[bundleId].video1);
-      setVideo2(videoState.bundles[bundleId].items[itemId - 1]?.video || '');
+      setVideo2(videoState.bundles[bundleId].items[itemId]?.video || '');
 
       // Delay updating the video refs
       setTimeout(() => {
@@ -241,13 +241,18 @@ const BgReplace = () => {
     const handleSync = () => {
       if (video1Ref.current && video2Ref.current) {
 
-        const currentTime1 = video1Ref.current.currentTime;
+        let currentTime1 = video1Ref.current.currentTime;
 
         const currentTime2 = video2Ref.current.currentTime;
 
         if (Math.abs(currentTime1 - currentTime2) > 0.15) {
+          video1Ref.current.pause();
+          video2Ref.current.pause();
+          currentTime1 = video1Ref.current.currentTime;
+          video2Ref.current.currentTime = currentTime1;
 
-          video2Ref.current.currentTime = currentTime1 + 0.1;
+          video1Ref.current.play();
+          video2Ref.current.play();
         }
 
         // Update progress based on video1's current time
@@ -378,6 +383,7 @@ const BgReplace = () => {
                   <Lottie options={defaultOptions}
                     height={300}
                     width={300}
+
                   // isStopped={this.state.isStopped}
                   // isPaused={this.state.isPaused}
                   />
@@ -432,9 +438,9 @@ const BgReplace = () => {
               <span className="text-lg font-semibold text-center text-white bg-black/50 p-2 rounded w-full max-w-full break-words">Apply Backgrounds</span>
 
               <div className='flex gap-5 border rounded-md'>
-                <img src={videoState.image1} onClick={() => { setSubVideo1(0); setCurrentSelection(1) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 1) && 'border-4'}`} />
-                <img src={videoState.image2} onClick={() => { setSubVideo1(1); setCurrentSelection(2) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 2) && 'border-4'}`} />
-                <img src={videoState.image3} onClick={() => { setSubVideo1(2); setCurrentSelection(3) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 3) && 'border-4'}`} />
+                <img src={videoState.image1} onClick={() => { setSubVideo1(0); setCurrentSelection(0) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 0) && 'border-4'}`} />
+                <img src={videoState.image2} onClick={() => { setSubVideo1(1); setCurrentSelection(1) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 1) && 'border-4'}`} />
+                <img src={videoState.image3} onClick={() => { setSubVideo1(2); setCurrentSelection(2) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 2) && 'border-4'}`} />
               </div>
 
               <div className="flex space-x-4">
@@ -454,17 +460,17 @@ const BgReplace = () => {
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 1</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 1</span>
             </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(1, 0)}>
+            <div className="w-1/2 p-1 relative" onClick={() => handleClick(1, 1)}>
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1622649440998-772d29680c57?q=80&w=1935&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 2</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 2</span>
             </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(2, 0)}>
+            <div className="w-1/2 p-1 relative" onClick={() => handleClick(2, 2)}>
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1713907908481-ad7a7b0d1085?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 3</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 3</span>
             </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(3, 0)}>
+            <div className="w-1/2 p-1 relative" onClick={() => handleClick(3, 3)}>
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1654897385787-be5a68dfdb88?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 4</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 4</span>
