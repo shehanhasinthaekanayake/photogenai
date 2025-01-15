@@ -26,10 +26,10 @@ import video5BackgroundImport from './new sample vids/video2/nikolai-lehmann-2Ev
 import video6BackgroundImport from './new sample vids/video2/transparent-background-4k-empty-grid-checkered-layout-wallpaper-free-vector.jpg'
 
 
-import videoOriginal3Import from './new sample vids/video3/original - Made with Clipchamp.mp4'
-import video7Import from './new sample vids/video3/greenscreen - Made with Clipchamp.mp4'
-import video8Import from './new sample vids/video3/appliedbackground - Made with Clipchamp.mp4'
-import video9Import from './new sample vids/video3/empty background.mp4'
+import videoOriginal3Import from './new sample vids/video 5/original - Made with Clipchamp.mp4'
+import video7Import from './new sample vids/video 5/greenscreen - Made with Clipchamp.mp4'
+import video8Import from './new sample vids/video 5/background replaced - Made with Clipchamp.mp4'
+import video9Import from './new sample vids/video 5/empty_banckground.mp4'
 import video7BackgroundImport from './new sample vids/video3/1.webp'
 import video8BackgroundImport from './new sample vids/video3/photo-1461782296610-c552d61b149a.png'
 import video9BackgroundImport from './new sample vids/video3/transparent-background-4k-empty-grid-checkered-layout-wallpaper-free-vector.jpg'
@@ -405,6 +405,7 @@ const BgReplace = () => {
                   // loop
                   muted
                   ref={video1Ref}
+                  preload="auto"
                 >
                   Your browser does not support the video tag.
                 </video>
@@ -417,6 +418,7 @@ const BgReplace = () => {
                   // loop
                   muted
                   ref={video2Ref}
+                  preload="auto"
                 >
                   Your browser does not support the video tag.
                 </video>
