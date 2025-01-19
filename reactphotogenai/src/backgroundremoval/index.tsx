@@ -417,7 +417,7 @@ const BgReplace = () => {
               video1Ref.current?.pause();
               video2Ref.current?.pause();
             });
-        }, 500);
+        }, 2000);
       }
     };
 
@@ -490,11 +490,31 @@ const BgReplace = () => {
     if (document.visibilityState === "visible" && videoPlayable.video1Playable && videoPlayable.video2Playable) {
       console.log("Both videos are ready and page is visible");
       setTimeout(() => {
-        video1Ref.current?.play().catch((err) => console.error("Video 1 play failed:", err));
-        video2Ref.current?.play().catch((err) => console.error("Video 2 play failed:", err));
-      }, 1000);
+        const playVideo1 = video1Ref.current?.play();
+        const playVideo2 = video2Ref.current?.play();
+      
+        playVideo1
+          .then(() => {
+            playVideo2?.catch((err) => {
+              console.error("Video 2 play error:", err);
+              video1Ref.current?.pause();
+              video2Ref.current?.pause();
+            });
+          })
+          .catch((err) => {
+            console.error("Video 1 play error:", err);
+            video1Ref.current?.pause();
+            video2Ref.current?.pause();
+          });
+      }, 200);
     } else {
       console.log("Videos not ready or page not visible");
+      // setTimeout(() => {
+        // video1Ref.current?.pause();
+        // video2Ref.current?.pause();
+      
+   
+      // }, 200);
     }
   }, [videoPlayable]);
 
