@@ -173,8 +173,26 @@ const BgReplace = () => {
         if (video1Ref.current && video2Ref.current) {
           video1Ref.current.currentTime = currentTime;
           video2Ref.current.currentTime = currentTime;
-          video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
-          video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));  
+
+
+            const playVideo1 = video1Ref.current?.play();
+            const playVideo2 = video2Ref.current?.play();
+          
+            playVideo1
+              .then(() => {
+                playVideo2?.catch((err) => {
+                  console.error("Video 2 play error:", err);
+                  video1Ref.current?.pause();
+                  video2Ref.current?.pause();
+                });
+              })
+              .catch((err) => {
+                console.error("Video 1 play error:", err);
+                video1Ref.current?.pause();
+                video2Ref.current?.pause();
+              });
+
+
         }
       }, 1000);
     }
@@ -210,8 +228,24 @@ const BgReplace = () => {
 
     setTimeout(() => {
       if (video1Ref.current && video2Ref.current) {
-        video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
-        video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));   
+        setTimeout(() => {
+          const playVideo1 = video1Ref.current?.play();
+          const playVideo2 = video2Ref.current?.play();
+        
+          playVideo1
+            .then(() => {
+              playVideo2?.catch((err) => {
+                console.error("Video 2 play error:", err);
+                video1Ref.current?.pause();
+                video2Ref.current?.pause();
+              });
+            })
+            .catch((err) => {
+              console.error("Video 1 play error:", err);
+              video1Ref.current?.pause();
+              video2Ref.current?.pause();
+            });
+        }, 500);  
         setSyncing(false);
       }
     }, 1000);
@@ -236,9 +270,25 @@ const BgReplace = () => {
           // video2Ref.current.pause();
           currentTime1 = video1Ref.current.currentTime;
           video2Ref.current.currentTime = currentTime1;
-
-          video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
-          video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));   
+          setTimeout(() => {
+            const playVideo1 = video1Ref.current?.play();
+            const playVideo2 = video2Ref.current?.play();
+          
+            playVideo1
+              .then(() => {
+                playVideo2?.catch((err) => {
+                  console.error("Video 2 play error:", err);
+                  video1Ref.current?.pause();
+                  video2Ref.current?.pause();
+                });
+              })
+              .catch((err) => {
+                console.error("Video 1 play error:", err);
+                video1Ref.current?.pause();
+                video2Ref.current?.pause();
+              });
+          }, 500);
+           
         }
 
         const duration = video1Ref.current.duration || 1;
@@ -351,9 +401,23 @@ const BgReplace = () => {
         }
 
         setTimeout(() => {
-          video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
-          video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));          
-        }, 2000);
+          const playVideo1 = video1Ref.current?.play();
+          const playVideo2 = video2Ref.current?.play();
+        
+          playVideo1
+            .then(() => {
+              playVideo2?.catch((err) => {
+                console.error("Video 2 play error:", err);
+                video1Ref.current?.pause();
+                video2Ref.current?.pause();
+              });
+            })
+            .catch((err) => {
+              console.error("Video 1 play error:", err);
+              video1Ref.current?.pause();
+              video2Ref.current?.pause();
+            });
+        }, 500);
       }
     };
 
