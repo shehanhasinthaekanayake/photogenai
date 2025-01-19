@@ -287,7 +287,7 @@ const BgReplace = () => {
                 video1Ref.current?.pause();
                 video2Ref.current?.pause();
               });
-          }, 500);
+          }, 100);
            
         }
 
