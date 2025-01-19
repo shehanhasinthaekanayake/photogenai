@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { setTimingsrc } from "timingsrc";
+import { useEffect, useRef } from "react";
+// import { setTimingsrc } from "timingsrc";
 import MediaTimingSrc from "./mediaTimingsrc";
 
 // Define prop types

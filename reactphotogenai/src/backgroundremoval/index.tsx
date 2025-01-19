@@ -86,7 +86,7 @@ const BgReplace = () => {
   });
   const [syncing, setSyncing] = useState(false);
 
-  const [currentSelection, setCurrentSelection] = useState(1);
+  const [, setCurrentSelection] = useState(1);
 
   const video1Ref = useRef<HTMLVideoElement>(null!); // Assert non-null
   const video2Ref = useRef<HTMLVideoElement>(null!); // Assert non-null  
@@ -94,14 +94,14 @@ const BgReplace = () => {
 
   const [progress, setProgress] = useState(0);
 
-  const defaultOptions = {
-    loop: true,
-    autoplay: true,
-    animationData: animationData,
-    rendererSettings: {
-      preserveAspectRatio: 'xMidYMid slice'
-    }
-  };
+  // const defaultOptions = {
+  //   loop: true,
+  //   autoplay: true,
+  //   animationData: animationData,
+  //   rendererSettings: {
+  //     preserveAspectRatio: 'xMidYMid slice'
+  //   }
+  // };
 
   const [videoState, setVideoState] = useState<VideoState>({
     currentSelection: { bundleId: 0, itemId: 0 },
@@ -272,11 +272,11 @@ const BgReplace = () => {
       video2Ref.current?.play();
     };
 
-    const handlePause = () => {
+    // const handlePause = () => {
 
-      video1Ref.current?.pause();
-      video2Ref.current?.pause();
-    };
+    //   video1Ref.current?.pause();
+    //   video2Ref.current?.pause();
+    // };
 
     const handleStalled = () => {
       console.error("Video is stalled. Pausing playback.");
@@ -374,7 +374,7 @@ const BgReplace = () => {
         if (syncTimeoutRef.current) return;
 
 
-        syncTimeoutRef.current = setTimeout(() => {
+        setTimeout(() => {
           handleSync();
           syncTimeoutRef.current = null;
         }, 200); // Adjust the interval as needed
