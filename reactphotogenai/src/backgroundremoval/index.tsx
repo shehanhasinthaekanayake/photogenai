@@ -43,7 +43,7 @@ import video11BackgroundImport from './new sample vids/video4/bernard-hermant-c4
 import video12BackgroundImport from './new sample vids/video4/transparent-background-4k-empty-grid-checkered-layout-wallpaper-free-vector.jpg'
 
 
-import Lottie from 'react-lottie';
+import Lottie from 'lottie-react';
 import animationData from './new sample vids/Animation - 1736837185654.json'
 
 
@@ -80,6 +80,10 @@ const BgReplace = () => {
 
   const [video1, setVideo1] = useState<string>(video1Import);
   const [video2, setVideo2] = useState<string>(video2Import);
+  const [videoPlayable, setVideoPlayable] = useState<any>({
+    video1Playable: false,
+    video2Playable: false
+  });
   const [syncing, setSyncing] = useState(false);
 
   const [currentSelection, setCurrentSelection] = useState(1);
@@ -183,7 +187,7 @@ const BgReplace = () => {
 
           video1Ref.current.play();
           video2Ref.current.play();
-          setSyncing(false);
+          // setSyncing(false);
         }
       }, 1000);
     }
@@ -232,8 +236,8 @@ const BgReplace = () => {
 
 
   useEffect(() => {
-    setVideo1(videoState?.bundles?.[0].video1)
-    setVideo2(videoState?.bundles?.[0].items?.[0].video)
+    setVideo1(videoState?.bundles?.[1].video1)
+    setVideo2(videoState?.bundles?.[1].items?.[0].video)
 
   }, [])
 
@@ -264,15 +268,81 @@ const BgReplace = () => {
 
     const handlePlay = () => {
 
+      video1Ref.current?.play();
       video2Ref.current?.play();
     };
 
     const handlePause = () => {
 
+      video1Ref.current?.pause();
       video2Ref.current?.pause();
     };
 
+    const handleStalled = () => {
+      console.error("Video is stalled. Pausing playback.");
+      try{
+        video2Ref.current?.pause();
 
+      } catch {
+
+      }
+
+      try{
+        video1Ref.current?.pause();
+      } catch {
+        
+      }
+
+    };
+
+    const handleError = () => {
+      console.error("Error loading video. Pausing playback.");
+      try{
+        video2Ref.current?.pause();
+
+      } catch {
+
+      }
+
+      try{
+        video1Ref.current?.pause();
+      } catch {
+        
+      }
+
+      try {
+        if (video1Ref) {
+          video1Ref.current.load(); // Retry loading the video
+          video2Ref.current.load(); // Retry loading the video
+
+        }
+      } catch {
+
+      }
+
+    };
+
+    const handleCanPlay = (id:number) => {
+      console.log("Video is ready to play.");
+
+      if (id == 1) {
+        setVideoPlayable({
+          ...videoPlayable,
+          video1Playable: true
+        })
+      }
+
+      if (id == 2) {
+        setVideoPlayable({
+          ...videoPlayable,
+          video2Playable: true
+        })
+      }
+
+
+    };
+
+    
 
     const handleEnd = () => {
       if (video1Ref.current && video2Ref.current) {
@@ -298,6 +368,7 @@ const BgReplace = () => {
 
     if (video1Ref.current && video2Ref.current) {
       const video1 = video1Ref.current;
+      const video2 = video2Ref.current;
 
       const throttledSync = () => {
         if (syncTimeoutRef.current) return;
@@ -312,12 +383,22 @@ const BgReplace = () => {
 
       video1.addEventListener("timeupdate", throttledSync);
 
+      video1.addEventListener("canplaythrough", () => {
+        handleCanPlay(1)
+      });
+      video2.addEventListener("canplaythrough", () => {
+        handleCanPlay(2)
+      });
+
       video1.addEventListener("play", handlePlay);
 
-      video1.addEventListener("pause", handlePause);
+      // video1.addEventListener("pause", handlePause);
 
       video1.addEventListener("ended", handleEnd);
 
+      video1.addEventListener("stalled", handleStalled);
+      video2.addEventListener("stalled", handleStalled);
+      video1.addEventListener("error", handleError);
 
       video2Ref.current.addEventListener("ended", handleEnd);
 
@@ -325,12 +406,23 @@ const BgReplace = () => {
 
         video1.removeEventListener("timeupdate", throttledSync);
 
+        video1.removeEventListener("canplaythrough",  () => {
+          handleCanPlay(1)
+        });
+        video2.removeEventListener("canplaythrough",  () => {
+          handleCanPlay(2)
+        });
+
+
         video1.removeEventListener("play", handlePlay);
 
-        video1.removeEventListener("pause", handlePause);
+        // video1.removeEventListener("pause", handlePause);
 
         video1.removeEventListener("ended", handleEnd);
 
+        video1.removeEventListener("stalled", handleStalled);
+        video2.removeEventListener("stalled", handleStalled);
+        video1.removeEventListener("error", handleError);
 
         video2Ref.current.removeEventListener("ended", handleEnd);
 
@@ -340,6 +432,24 @@ const BgReplace = () => {
       };
     }
   }, []);
+
+  useEffect(() => {
+    if (videoPlayable?.video1Playable && videoPlayable?.video2Playable) {
+      console.log("both ready to play")
+
+      setTimeout(() => {
+        video1Ref.current.play();
+        video2Ref.current.play();
+      },1000)
+    } 
+    else {
+      console.log("both not ready to play")
+      // video1Ref.current?.pause();
+      // video2Ref.current?.pause();
+    }
+
+    
+  },[videoPlayable])
 
 
   return (
@@ -380,21 +490,20 @@ const BgReplace = () => {
             {
               (syncing) && (
                 <div className='w-full h-full absolute z-9999 flex items-center justify-center'>
-                  <Lottie options={defaultOptions}
+                  {/* <Lottie options={defaultOptions}
                     height={300}
                     width={300}
 
                   // isStopped={this.state.isStopped}
                   // isPaused={this.state.isPaused}
-                  />
+                  /> */}
+                  <Lottie height={300}
+                    width={300} animationData={animationData} loop={true} />
                 </div>
               )
             }
 
-            {/* <ReactCompareSlider className='absolute inset-0 bg-cover bg-center'
-              itemOne={<img className='w-full h-full' src="https://images.unsplash.com/photo-1646189985810-b2adb304d18f?q=80&w=1972&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" srcSet="https://images.unsplash.com/photo-1646189985810-b2adb304d18f?q=80&w=1972&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Image one" />}
-              itemTwo={<img className='h-full object-fill' src="https://images.unsplash.com/photo-1657662960615-8cbbda110742?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" srcSet="https://images.unsplash.com/photo-1657662960615-8cbbda110742?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Image two" />}
-            /> */}
+ 
             <ReactCompareSlider
               className="absolute h-full"
               itemOne={
@@ -404,11 +513,13 @@ const BgReplace = () => {
                   autoPlay
                   // loop
                   muted
+                  playsInline 
                   ref={video1Ref}
                   preload="auto"
                 >
                   Your browser does not support the video tag.
                 </video>
+
               }
               itemTwo={
                 <video
@@ -417,6 +528,7 @@ const BgReplace = () => {
                   autoPlay
                   // loop
                   muted
+                  playsInline 
                   ref={video2Ref}
                   preload="auto"
                 >
@@ -440,9 +552,18 @@ const BgReplace = () => {
               <span className="text-lg font-semibold text-center text-white bg-black/50 p-2 rounded w-full max-w-full break-words">Apply Backgrounds</span>
 
               <div className='flex gap-5 border rounded-md'>
-                <img src={videoState.image1} onClick={() => { setSubVideo1(0); setCurrentSelection(0) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 0) && 'border-4'}`} />
+              <button onClick={() => { setSubVideo1(0); setCurrentSelection(0) }} className="bg-white/30 backdrop-blur-md border border-white/20 text-lg font-semibold text-white hover:bg-white/50 transition duration-300 rounded-lg px-6 py-2 cursor-pointer w-32">
+                  green
+                </button>
+                <button onClick={() => { setSubVideo1(1); setCurrentSelection(1) }} className="bg-white/30 backdrop-blur-md border border-white/20 text-lg font-semibold text-white hover:bg-white/50 transition duration-300 rounded-lg px-6 py-2 cursor-pointer w-32">
+                  BG
+                </button>
+                <button onClick={() => { setSubVideo1(2); setCurrentSelection(2) }} className="bg-white/30 backdrop-blur-md border border-white/20 text-lg font-semibold text-white hover:bg-white/50 transition duration-300 rounded-lg px-6 py-2 cursor-pointer w-32">
+                  Empty
+                </button>
+                {/* <img src={videoState.image1} onClick={() => { setSubVideo1(0); setCurrentSelection(0) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 0) && 'border-4'}`} />
                 <img src={videoState.image2} onClick={() => { setSubVideo1(1); setCurrentSelection(1) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 1) && 'border-4'}`} />
-                <img src={videoState.image3} onClick={() => { setSubVideo1(2); setCurrentSelection(2) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 2) && 'border-4'}`} />
+                <img src={videoState.image3} onClick={() => { setSubVideo1(2); setCurrentSelection(2) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 2) && 'border-4'}`} /> */}
               </div>
 
               <div className="flex space-x-4">
@@ -462,17 +583,17 @@ const BgReplace = () => {
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 1</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 1</span>
             </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(1, 1)}>
+            <div className="w-1/2 p-1 relative" onClick={() => handleClick(1, 0)}>
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1622649440998-772d29680c57?q=80&w=1935&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 2</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 2</span>
             </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(2, 2)}>
+            <div className="w-1/2 p-1 relative" onClick={() => handleClick(2, 0)}>
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1713907908481-ad7a7b0d1085?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 3</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 3</span>
             </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(3, 3)}>
+            <div className="w-1/2 p-1 relative" onClick={() => handleClick(3, 0)}>
               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1654897385787-be5a68dfdb88?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
               <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 4</span>
               <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 4</span>
@@ -489,3 +610,18 @@ const BgReplace = () => {
 }
 
 export default BgReplace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
