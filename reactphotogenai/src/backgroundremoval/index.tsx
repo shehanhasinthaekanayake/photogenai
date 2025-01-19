@@ -88,20 +88,11 @@ const BgReplace = () => {
 
   const [, setCurrentSelection] = useState(1);
 
-  const video1Ref = useRef<HTMLVideoElement>(null!); // Assert non-null
-  const video2Ref = useRef<HTMLVideoElement>(null!); // Assert non-null  
+  const video1Ref = useRef<HTMLVideoElement>(null!); 
+  const video2Ref = useRef<HTMLVideoElement>(null!); 
   const syncTimeoutRef = useRef<number | null>(null);
 
   const [progress, setProgress] = useState(0);
-
-  // const defaultOptions = {
-  //   loop: true,
-  //   autoplay: true,
-  //   animationData: animationData,
-  //   rendererSettings: {
-  //     preserveAspectRatio: 'xMidYMid slice'
-  //   }
-  // };
 
   const [videoState, setVideoState] = useState<VideoState>({
     currentSelection: { bundleId: 0, itemId: 0 },
@@ -150,8 +141,6 @@ const BgReplace = () => {
     ],
   });
 
-
-
   const handleClick = (bundleId: number, itemId: number) => {
     if (video1Ref.current && video2Ref.current) {
       setSyncing(true);
@@ -184,17 +173,12 @@ const BgReplace = () => {
         if (video1Ref.current && video2Ref.current) {
           video1Ref.current.currentTime = currentTime;
           video2Ref.current.currentTime = currentTime;
-
-          video1Ref.current.play();
-          video2Ref.current.play();
-          // setSyncing(false);
+          video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
+          video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));  
         }
       }, 1000);
     }
   };
-
-
-
 
   const setSubVideo1 = (itemId: number) => {
     setSyncing(true);
@@ -212,7 +196,7 @@ const BgReplace = () => {
     const selectedVideo =
       videoState?.bundles?.[videoState.currentSelection.bundleId]?.items?.find(
         (item) => item.id === itemId
-      )?.video || ''; // Provide an empty string if `null`
+      )?.video || ''; 
 
     setVideo2(selectedVideo);
 
@@ -226,14 +210,12 @@ const BgReplace = () => {
 
     setTimeout(() => {
       if (video1Ref.current && video2Ref.current) {
-        video1Ref.current.play();
-        video2Ref.current.play();
+        video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
+        video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));   
         setSyncing(false);
       }
     }, 1000);
   };
-
-
 
   useEffect(() => {
     setVideo1(videoState?.bundles?.[1].video1)
@@ -250,71 +232,81 @@ const BgReplace = () => {
         const currentTime2 = video2Ref.current.currentTime;
 
         if (Math.abs(currentTime1 - currentTime2) > 0.15) {
-          video1Ref.current.pause();
-          video2Ref.current.pause();
+          // video1Ref.current.pause();
+          // video2Ref.current.pause();
           currentTime1 = video1Ref.current.currentTime;
           video2Ref.current.currentTime = currentTime1;
 
-          video1Ref.current.play();
-          video2Ref.current.play();
+          video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
+          video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));   
         }
 
-        // Update progress based on video1's current time
-
-        const duration = video1Ref.current.duration || 1; // Avoid division by zero
+        const duration = video1Ref.current.duration || 1;
         setProgress((currentTime1 / duration) * 100);
       }
     };
 
-    const handlePlay = () => {
+    const handlePlay = (id:any) => {
 
-      video1Ref.current?.play();
-      video2Ref.current?.play();
+      if (id == 1) {
+        setVideoPlayable({
+          ...videoPlayable,
+          video1Playable: true
+        })
+      }
+
+      if (id == 2) {
+        setVideoPlayable({
+          ...videoPlayable,
+          video2Playable: true
+        })
+      }
+
     };
 
-    // const handlePause = () => {
-
-    //   video1Ref.current?.pause();
-    //   video2Ref.current?.pause();
-    // };
-
-    const handleStalled = () => {
+    const handleStalled = (id:any) => {
       console.error("Video is stalled. Pausing playback.");
-      try{
-        video2Ref.current?.pause();
 
-      } catch {
-
+      if (id == 1) {
+        setVideoPlayable({
+          ...videoPlayable,
+          video1Playable: false
+        })
       }
 
-      try{
-        video1Ref.current?.pause();
-      } catch {
-        
+      if (id == 2) {
+        setVideoPlayable({
+          ...videoPlayable,
+          video2Playable: false
+        })
       }
 
     };
 
-    const handleError = () => {
+    const handleError = (id:number) => {
       console.error("Error loading video. Pausing playback.");
-      try{
-        video2Ref.current?.pause();
 
-      } catch {
-
+      if (id == 1) {
+        setVideoPlayable({
+          ...videoPlayable,
+          video1Playable: false
+        })
       }
 
-      try{
-        video1Ref.current?.pause();
-      } catch {
-        
+      if (id == 2) {
+        setVideoPlayable({
+          ...videoPlayable,
+          video2Playable: false
+        })
       }
 
       try {
-        if (video1Ref) {
-          video1Ref.current.load(); // Retry loading the video
-          video2Ref.current.load(); // Retry loading the video
+        if (id == 1) {
+          video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
+        }
 
+        if (id == 2) {
+          video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));
         }
       } catch {
 
@@ -339,29 +331,28 @@ const BgReplace = () => {
         })
       }
 
-
     };
 
-    
-
-    const handleEnd = () => {
+    const handleEnd = (id:number) => {
       if (video1Ref.current && video2Ref.current) {
 
-        video1Ref.current.pause();
+        if (id == 1) {
+          setVideoPlayable({
+            ...videoPlayable,
+            video1Playable: false
+          })
+        }
+  
+        if (id == 2) {
+          setVideoPlayable({
+            ...videoPlayable,
+            video2Playable: false
+          })
+        }
 
-        video2Ref.current.pause();
-
-        // Wait for 2 seconds before restarting
         setTimeout(() => {
-
-          video1Ref.current.currentTime = 0;
-
-          video2Ref.current.currentTime = 0;
-
-
-          video1Ref.current.play();
-
-          video2Ref.current.play();
+          video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
+          video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));          
         }, 2000);
       }
     };
@@ -390,17 +381,16 @@ const BgReplace = () => {
         handleCanPlay(2)
       });
 
-      video1.addEventListener("play", handlePlay);
+      video1.addEventListener("play", () => {handlePlay(1)});
+      video2.addEventListener("play", () => {handlePlay(2)});
 
-      // video1.addEventListener("pause", handlePause);
+      video1.addEventListener("stalled", () => {handleStalled(1)});
+      video2.addEventListener("stalled", () => {handleStalled(2)});
+      video1.addEventListener("error",  () => {handleError(1)} );
+      video2.addEventListener("error",  () => {handleError(2)} );
 
-      video1.addEventListener("ended", handleEnd);
-
-      video1.addEventListener("stalled", handleStalled);
-      video2.addEventListener("stalled", handleStalled);
-      video1.addEventListener("error", handleError);
-
-      video2Ref.current.addEventListener("ended", handleEnd);
+      video1.addEventListener("ended", () => handleEnd(1));
+      video2.addEventListener("ended", () => handleEnd(2));
 
       return () => {
 
@@ -414,17 +404,16 @@ const BgReplace = () => {
         });
 
 
-        video1.removeEventListener("play", handlePlay);
+        video1.removeEventListener("play", () => {handlePlay(1)});
+        video2.removeEventListener("play", () => {handlePlay(2)});
 
-        // video1.removeEventListener("pause", handlePause);
+        video1.removeEventListener("stalled",  () => {handleStalled(1)});
+        video2.removeEventListener("stalled",  () => {handleStalled(2)});
+        video1.removeEventListener("error", () => {handleError(1)});
+        video2.removeEventListener("error", () => {handleError(2)});
 
-        video1.removeEventListener("ended", handleEnd);
-
-        video1.removeEventListener("stalled", handleStalled);
-        video2.removeEventListener("stalled", handleStalled);
-        video1.removeEventListener("error", handleError);
-
-        video2Ref.current.removeEventListener("ended", handleEnd);
+        video1.removeEventListener("ended", () => handleEnd(1));
+        video2.removeEventListener("ended", () => handleEnd(2));
 
         if (syncTimeoutRef.current) {
           clearTimeout(syncTimeoutRef.current);
@@ -434,22 +423,16 @@ const BgReplace = () => {
   }, []);
 
   useEffect(() => {
-    if (videoPlayable?.video1Playable && videoPlayable?.video2Playable) {
-      console.log("both ready to play")
-
+    if (document.visibilityState === "visible" && videoPlayable.video1Playable && videoPlayable.video2Playable) {
+      console.log("Both videos are ready and page is visible");
       setTimeout(() => {
-        video1Ref.current.play();
-        video2Ref.current.play();
-      },1000)
-    } 
-    else {
-      console.log("both not ready to play")
-      // video1Ref.current?.pause();
-      // video2Ref.current?.pause();
+        video1Ref.current?.play().catch((err) => console.error("Video 1 play failed:", err));
+        video2Ref.current?.play().catch((err) => console.error("Video 2 play failed:", err));
+      }, 1000);
+    } else {
+      console.log("Videos not ready or page not visible");
     }
-
-    
-  },[videoPlayable])
+  }, [videoPlayable]);
 
 
   return (
