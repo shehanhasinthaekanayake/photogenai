@@ -350,17 +350,17 @@ const BgReplace = () => {
         })
       }
 
-      try {
-        if (id == 1) {
-          video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
-        }
+      // try {
+      //   if (id == 1) {
+      //     video1Ref.current?.play().catch((err) => console.error("Video 1 play error:", err));
+      //   }
 
-        if (id == 2) {
-          video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));
-        }
-      } catch {
+      //   if (id == 2) {
+      //     video2Ref.current?.play().catch((err) => console.error("Video 2 play error:", err));
+      //   }
+      // } catch {
 
-      }
+      // }
 
     };
 
