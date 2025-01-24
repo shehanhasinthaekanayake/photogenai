@@ -9,7 +9,6 @@ import logo from '../2.33x/Asset 3.png'
 import { Pricing } from '../components/pricing/pricing';
 import { Youtube } from '../components/tutorial/youtube';
 
-
 import videoOriginal1Import from './new sample vids/video1/Worth It .mp4'
 import video1Import from './new sample vids/video1/AnimateDiff22_00011-audio.mp4'
 import video2Import from './new sample vids/video1/AnimateDiff22_00012-audio.mp4'
@@ -19,18 +18,18 @@ import video2BackgroundImport from './new sample vids/video1/istockphoto-1297470
 import video3BackgroundImport from './new sample vids/video1/transparent-background-4k-empty-grid-checkered-layout-wallpaper-free-vector.jpg'
 
 import videoOriginal2Import from './new sample vids/video2/original video - Made with Clipchamp.mp4'
-import video4Import from './new sample vids/video2/green screen AnimateDiff22_00036.mp4'
-import video5Import from './new sample vids/video2/background applied - Made with Clipchamp.mp4'
-import video6Import from './new sample vids/video2/removed background video.mp4'
+import video4Import from './new sample vids/video2/background applied - Made with Clipchamp.mp4'
+import video5Import from './new sample vids/video2/removed background video.mp4'
+import video6Import from './new sample vids/video2/green screen AnimateDiff22_00036.mp4'
 import video4BackgroundImport from './new sample vids/video2/green-screen-8k-ultra-hd-plus-free-photo.jpg'
 import video5BackgroundImport from './new sample vids/video2/nikolai-lehmann-2Evzm2fwRH8-unsplash (1).jpg'
 import video6BackgroundImport from './new sample vids/video2/transparent-background-4k-empty-grid-checkered-layout-wallpaper-free-vector.jpg'
 
 
-import videoOriginal3Import from './new sample vids/video 5/original - Made with Clipchamp.mp4'
-import video7Import from './new sample vids/video 5/greenscreen - Made with Clipchamp.mp4'
-import video8Import from './new sample vids/video 5/background replaced - Made with Clipchamp.mp4'
-import video9Import from './new sample vids/video 5/empty_banckground.mp4'
+import videoOriginal3Import from './new sample vids/video3/original - Made with Clipchamp.mp4'
+import video7Import from './new sample vids/video3/greenscreen - Made with Clipchamp.mp4'
+import video8Import from './new sample vids/video3/appliedbackground - Made with Clipchamp.mp4'
+import video9Import from './new sample vids/video3/empty background.mp4'
 import video7BackgroundImport from './new sample vids/video3/1.webp'
 import video8BackgroundImport from './new sample vids/video3/photo-1461782296610-c552d61b149a.png'
 import video9BackgroundImport from './new sample vids/video3/transparent-background-4k-empty-grid-checkered-layout-wallpaper-free-vector.jpg'
@@ -44,60 +43,37 @@ import video11BackgroundImport from './new sample vids/video4/bernard-hermant-c4
 import video12BackgroundImport from './new sample vids/video4/transparent-background-4k-empty-grid-checkered-layout-wallpaper-free-vector.jpg'
 
 
-import Lottie from 'lottie-react';
+import Lottie from 'react-lottie';
 import animationData from './new sample vids/Animation - 1736837185654.json'
 
 
 // import video2 from './AnimateDiff22_00012-audio.mp4'
 import { useRef, useEffect, useState } from 'react';
 
-interface VideoItem {
-  id: number;
-  image: string;
-  video: string;
-}
-
-interface VideoBundle {
-  bundleId: number;
-  video1: string;
-  items: VideoItem[];
-}
-
-interface VideoState {
-  currentSelection: {
-    bundleId: number;
-    itemId: number;
-  };
-  video1: string | null;
-  video2: string | null;
-  image1: string;
-  image2: string;
-  image3: string;
-  bundles: VideoBundle[];
-}
-
-
 const BgReplace = () => {
 
-  const [video1, setVideo1] = useState<string>(video1Import);
-  const [video2, setVideo2] = useState<string>(video2Import);
-  const [videoPlayable, setVideoPlayable] = useState<any>({
-    video1Playable: false,
-    video2Playable: false
-  });
+  const [video1, setVideo1] = useState(video1Import);
+  const [video2, setVideo2] = useState(video2Import);
   const [syncing, setSyncing] = useState(false);
-  const [loadedPercentage, setLoadedPercentage] = useState<any>(0);
 
+  const [currentSelection, setCurrentSelection] = useState(1);
 
-  const [, setCurrentSelection] = useState(1);
-
-  const video1Ref = useRef<HTMLVideoElement>(null!);
-  const video2Ref = useRef<HTMLVideoElement>(null!);
-  const syncTimeoutRef = useRef<number | null>(null);
+  const video1Ref = useRef(null);
+  const video2Ref = useRef(null);
+  const syncTimeoutRef = useRef(null);
 
   const [progress, setProgress] = useState(0);
 
-  const [videoState, setVideoState] = useState<VideoState>({
+  const defaultOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: animationData,
+    rendererSettings: {
+      preserveAspectRatio: 'xMidYMid slice'
+    }
+  };
+
+  const [videoState, setVideoState] = useState({
     currentSelection: { bundleId: 0, itemId: 0 },
     video1: null,
     video2: null,
@@ -109,367 +85,217 @@ const BgReplace = () => {
         bundleId: 0,
         video1: videoOriginal1Import,
         items: [
-          { id: 0, image: video1BackgroundImport, video: video1Import },
-          { id: 1, image: video2BackgroundImport, video: video2Import },
-          { id: 2, image: video3BackgroundImport, video: video3Import },
+          { id: 1, image: video1BackgroundImport, video: video1Import },
+          { id: 2, image: video2BackgroundImport, video: video2Import },
+          { id: 3, image: video3BackgroundImport, video: video3Import },
         ],
       },
       {
         bundleId: 1,
         video1: videoOriginal2Import,
         items: [
-          { id: 0, image: video4BackgroundImport, video: video4Import },
-          { id: 1, image: video5BackgroundImport, video: video5Import },
-          { id: 2, image: video6BackgroundImport, video: video6Import },
+          { id: 1, image: video4BackgroundImport, video: video4Import },
+          { id: 2, image: video5BackgroundImport, video: video5Import },
+          { id: 3, image: video6BackgroundImport, video: video6Import },
         ],
       },
       {
         bundleId: 2,
         video1: videoOriginal3Import,
         items: [
-          { id: 0, image: video7BackgroundImport, video: video7Import },
-          { id: 1, image: video8BackgroundImport, video: video8Import },
-          { id: 2, image: video9BackgroundImport, video: video9Import },
+          { id: 1, image: video7BackgroundImport, video: video7Import },
+          { id: 2, image: video8BackgroundImport, video: video8Import },
+          { id: 3, image: video9BackgroundImport, video: video9Import },
         ],
       },
       {
         bundleId: 3,
         video1: videoOriginal4Import,
         items: [
-          { id: 0, image: video10BackgroundImport, video: video10Import },
-          { id: 1, image: video11BackgroundImport, video: video11Import },
-          { id: 2, image: video12BackgroundImport, video: video12Import },
+          { id: 1, image: video10BackgroundImport, video: video10Import },
+          { id: 2, image: video11BackgroundImport, video: video11Import },
+          { id: 3, image: video12BackgroundImport, video: video12Import },
         ],
       },
     ],
   });
 
+  const [videoThumbnails, setVideoThumbnails] = useState({
+    bundle0: { original: '', modified: '' },
+    bundle1: { original: '', modified: '' },
+    bundle2: { original: '', modified: '' },
+    bundle3: { original: '', modified: '' },
+  });
 
-  const updateBufferedPercentage = (videoRef:any, id:number) => {
-    const video = videoRef;
-    if (video) {
-      const buffered = video.buffered;
-      const duration = video.duration;
-
-      // if (buffered.length > 0 && duration > 0) {
-        const bufferedEnd = buffered.end(buffered.length - 1); // Last buffered range
-        const percentage = (bufferedEnd / duration) * 100;
-
-        if (id == 1 && (percentage > 50)) {
-          console.log(percentage, id , " up")
-
-          setVideoPlayable({
-            ...videoPlayable,
-            video1Playable: true
-          })
-        }
-  
-        if ((id == 2) && (percentage > 50)) {
-          console.log(percentage, id , " up")
-          setVideoPlayable({
-            ...videoPlayable,
-            video2Playable: true
-          })
-        }
-
-        console.log(percentage.toFixed(2))
-        setLoadedPercentage(percentage.toFixed(2));
-      // }
-    }
-  };
-
-  const handleClick = (bundleId: number, itemId: number) => {
+  const handleClick = (bundleId: any, itemId: any, video: any) => {
+    // Pause both videos before switching
     if (video1Ref.current && video2Ref.current) {
-      setSyncing(true);
-
-      // Pause both videos
+      setSyncing(true)
       video1Ref.current.pause();
       video2Ref.current.pause();
+      const currentTime = video1Ref.current.currentTime; // Get the current playback time
 
-      const currentTime = video1Ref.current.currentTime;
+      console.log("stop the video")
+      // Pause videos
 
-      // console.log("stop the video");
-
-      // Update state with the new selection
-      setVideoState((prevState) => ({
+      // Set the state with the new selection
+      setVideoState((prevState: any) => ({
         ...prevState,
         currentSelection: { bundleId, itemId },
-        video1: prevState.bundles[bundleId].video1,
-        video2: prevState.bundles[bundleId].items[itemId]?.video || null,
-        image1: prevState.bundles[bundleId].items[0]?.image || '',
-        image2: prevState.bundles[bundleId].items[1]?.image || '',
-        image3: prevState.bundles[bundleId].items[2]?.image || '',
+        video1: videoState?.bundles?.[bundleId].video1,
+        video2: videoState?.bundles?.[bundleId].items?.[itemId].video,
+        image1: videoState?.bundles?.[bundleId].items?.[0].image,
+        image2: videoState?.bundles?.[bundleId].items?.[1].image,
+        image3: videoState?.bundles?.[bundleId].items?.[2].image,
       }));
 
-      // Update the videos
-      setVideo1(videoState.bundles[bundleId].video1);
-      setVideo2(videoState.bundles[bundleId].items[itemId]?.video || '');
+      // Set the new videos
+      setVideo1(videoState?.bundles?.[bundleId].video1);
+      setVideo2(videoState?.bundles?.[bundleId].items?.[itemId].video);
 
-      // Delay updating the video refs
+      // Delay updating the video refs to allow React to render the new videos
+
       setTimeout(() => {
         if (video1Ref.current && video2Ref.current) {
+
+          // Sync the current time for both videos
           video1Ref.current.currentTime = currentTime;
           video2Ref.current.currentTime = currentTime;
 
-
-          const playVideo1 = video1Ref.current?.play();
-          const playVideo2 = video2Ref.current?.play();
-
-          playVideo1
-            .then(() => {
-              playVideo2?.catch((err) => {
-                console.error("Video 2 play error:", err);
-                video1Ref.current?.pause();
-                video2Ref.current?.pause();
-              });
-            })
-            .catch((err) => {
-              console.error("Video 1 play error:", err);
-              video1Ref.current?.pause();
-              video2Ref.current?.pause();
-            });
-
+          // Play both videos
+          video1Ref.current.play();
+          video2Ref.current.play();
+          setSyncing(false)
 
         }
-      }, 1000);
+      }, 1000); // Small delay to ensure refs are updated
     }
   };
 
-  const setSubVideo1 = (itemId: number) => {
-    setSyncing(true);
 
+  const setSubVideo1 = (itemId: any) => {
+    setSyncing(true)
+    
     if (video1Ref.current && video2Ref.current) {
+      
       video1Ref.current.pause();
       video2Ref.current.pause();
     }
-
-    setVideoState((prevState) => ({
+    setVideoState((prevState: any) => ({
       ...prevState,
-      currentSelection: { bundleId: prevState.currentSelection.bundleId, itemId },
+      currentSelection: { bundleId: prevState.currentSelection.bundleId, itemId }
     }));
-
-    const selectedVideo =
-      videoState?.bundles?.[videoState.currentSelection.bundleId]?.items?.find(
-        (item) => item.id === itemId
-      )?.video || '';
-
-    setVideo2(selectedVideo);
-
-
+    setVideo2(videoState?.bundles?.[videoState?.currentSelection?.bundleId]?.items?.[itemId]?.video)
+    
     if (video1Ref.current && video2Ref.current) {
-      const currentTime = video1Ref.current.currentTime;
+      const currentTime = video1Ref.current.currentTime; // Get the current playback time
 
-      video1Ref.current.currentTime = currentTime;
-      video2Ref.current.currentTime = currentTime;
+     // Sync the current time for both videos
+     video1Ref.current.currentTime = currentTime;
+     video2Ref.current.currentTime = currentTime;
+
     }
-
-    setTimeout(() => {
-      if (video1Ref.current && video2Ref.current) {
-        setTimeout(() => {
-          const playVideo1 = video1Ref.current?.play();
-          const playVideo2 = video2Ref.current?.play();
-
-          playVideo1
-            .then(() => {
-              playVideo2?.catch((err) => {
-                console.error("Video 2 play error:", err);
-                video1Ref.current?.pause();
-                video2Ref.current?.pause();
-              });
-            })
-            .catch((err) => {
-              console.error("Video 1 play error:", err);
-              video1Ref.current?.pause();
-              video2Ref.current?.pause();
-            });
-        }, 500);
-        setSyncing(false);
-      }
-    }, 1000);
-  };
-
-  const handleBGChange = (par1:number, par2:number) => {
-
-    setTimeout(() => {
-      if (video1Ref.current && video2Ref.current) {
-        setSubVideo1(par1)
-        setCurrentSelection(par2)
-        setSyncing(false);
+     setTimeout(() => {
+       if (video1Ref.current && video2Ref.current) {
          
-            setVideoPlayable({
-              ...videoPlayable,
-              video1Playable: false,
-              video2Playable: false
-            })    
-          
-      }
-    }, 100);
+   
 
+        // Play both videos
+        video1Ref.current.play();
+        video2Ref.current.play();
+        setSyncing(false)
+
+      }
+    }, 1000); // Small delay to ensure refs are updated
 
   }
 
   useEffect(() => {
-    setVideo1(videoState?.bundles?.[1].video1)
-    setVideo2(videoState?.bundles?.[1].items?.[0].video)
+    // Initial video and background setup
+    setVideo1(videoState?.bundles?.[0].video1);
+    setVideo2(videoState?.bundles?.[0].items?.[0].video);
+    
+    // Set the initial backgrounds
+    setVideoState((prevState: any) => ({
+      ...prevState,
+      image1: videoState?.bundles?.[0].items?.[0].image,
+      image2: videoState?.bundles?.[0].items?.[1].image,
+      image3: videoState?.bundles?.[0].items?.[2].image,
+      currentSelection: { bundleId: 0, itemId: 0 }
+    }));
+  }, []);
 
-  }, [])
-
+  // Update backgrounds whenever video1 changes
+  useEffect(() => {
+    const currentBundleId = videoState.bundles.findIndex(bundle => bundle.video1 === video1);
+    if (currentBundleId !== -1) {
+      setVideoState((prevState: any) => ({
+        ...prevState,
+        image1: videoState.bundles[currentBundleId].items[0].image,
+        image2: videoState.bundles[currentBundleId].items[1].image,
+        image3: videoState.bundles[currentBundleId].items[2].image,
+        currentSelection: { bundleId: currentBundleId, itemId: 0 }
+      }));
+    }
+  }, [video1]);
 
   useEffect(() => {
-    const handleSync = () => {
+    const syncVideos = () => {
       if (video1Ref.current && video2Ref.current) {
+        const time1 = video1Ref.current.currentTime;
+        const time2 = video2Ref.current.currentTime;
+        const timeDiff = Math.abs(time1 - time2);
 
-        let currentTime1 = video1Ref.current.currentTime;
-
-        const currentTime2 = video2Ref.current.currentTime;
-
-        if (Math.abs(currentTime1 - currentTime2) > 0.15) {
-          // video1Ref.current.pause();
-          // video2Ref.current.pause();
-          currentTime1 = video1Ref.current.currentTime;
-          video2Ref.current.currentTime = currentTime1;
-          setTimeout(() => {
-            const playVideo1 = video1Ref.current?.play();
-            const playVideo2 = video2Ref.current?.play();
-
-            playVideo1
-              .then(() => {
-                playVideo2?.catch((err) => {
-                  console.error("Video 2 play error:", err);
-                  setVideoPlayable({
-                    ...videoPlayable,
-                    video1Playable: false,
-                    video2Playable: false
-                  }) 
-                });
-              })
-              .catch((err) => {
-                console.error("Video 1 play error:", err);
-                setVideoPlayable({
-                  ...videoPlayable,
-                  video1Playable: false,
-                  video2Playable: false
-                }) 
-              });
-          }, 100);
-
+        // If videos are out of sync by more than 0.1 seconds
+        if (timeDiff > 0.1) {
+          video2Ref.current.currentTime = time1;
         }
 
+        // Update progress
         const duration = video1Ref.current.duration || 1;
-        setProgress((currentTime1 / duration) * 100);
+        setProgress((time1 / duration) * 100);
       }
     };
 
-    const handlePlay = (id: any) => {
-
-      if (id == 1) {
-        setVideoPlayable({
-          ...videoPlayable,
-          video1Playable: true
-        })
-      }
-
-      if (id == 2) {
-        setVideoPlayable({
-          ...videoPlayable,
-          video2Playable: true
-        })
-      }
-
-    };
-
-    const handleStalled = (id: any) => {
-      console.error("Video is stalled. Pausing playback.");
-
-      if (id == 1) {
-        setVideoPlayable({
-          ...videoPlayable,
-          video1Playable: false
-        })
-      }
-
-      if (id == 2) {
-        setVideoPlayable({
-          ...videoPlayable,
-          video2Playable: false
-        })
-      }
-
-    };
-
-    const handleError = (id: number) => {
-      console.error("Error loading video. Pausing playback.");
-
-      if (id == 1) {
-        setVideoPlayable({
-          ...videoPlayable,
-          video1Playable: false
-        })
-      }
-
-      if (id == 2) {
-        setVideoPlayable({
-          ...videoPlayable,
-          video2Playable: false
-        })
-      }
-
-    };
-
-    const handleCanPlay = (id: number) => {
-      console.log("Video is ready to play.");
-
-      if (id == 1) {
-        setVideoPlayable({
-          ...videoPlayable,
-          video1Playable: true
-        })
-      }
-
-      if (id == 2) {
-        setVideoPlayable({
-          ...videoPlayable,
-          video2Playable: true
-        })
-      }
-
-    };
-
-    const handleEnd = (id: number) => {
+    const handleVideoEnd = () => {
       if (video1Ref.current && video2Ref.current) {
+        // Reset both videos to start
+        video1Ref.current.currentTime = 0;
+        video2Ref.current.currentTime = 0;
+        
+        // Play both videos
+        Promise.all([
+          video1Ref.current.play(),
+          video2Ref.current.play()
+        ]).catch(error => console.log("Error restarting videos:", error));
+      }
+    };
 
-        if (id == 1) {
-          setVideoPlayable({
-            ...videoPlayable,
-            video1Playable: false
-          })
-        }
+    const handleVideoEvents = (event: string) => {
+      if (!video1Ref.current || !video2Ref.current) return;
 
-        if (id == 2) {
-          setVideoPlayable({
-            ...videoPlayable,
-            video2Playable: false
-          })
-        }
-
-        setTimeout(() => {
-          const playVideo1 = video1Ref.current?.play();
-          const playVideo2 = video2Ref.current?.play();
-
-          playVideo1
-            .then(() => {
-              playVideo2?.catch((err) => {
-                console.error("Video 2 play error:", err);
-                video1Ref.current?.pause();
-                video2Ref.current?.pause();
-              });
-            })
-            .catch((err) => {
-              console.error("Video 1 play error:", err);
-              video1Ref.current?.pause();
-              video2Ref.current?.pause();
-            });
-        }, 2000);
+      switch (event) {
+        case 'play':
+          video2Ref.current.play();
+          syncVideos();
+          break;
+        case 'pause':
+          video2Ref.current.pause();
+          syncVideos();
+          break;
+        case 'seeking':
+          video2Ref.current.currentTime = video1Ref.current.currentTime;
+          break;
+        case 'waiting':
+          video2Ref.current.pause();
+          break;
+        case 'playing':
+          video2Ref.current.play();
+          syncVideos();
+          break;
+        case 'ended':
+          handleVideoEnd();
+          break;
       }
     };
 
@@ -477,110 +303,130 @@ const BgReplace = () => {
       const video1 = video1Ref.current;
       const video2 = video2Ref.current;
 
-      const throttledSync = () => {
-        if (syncTimeoutRef.current) return;
+      video1.playbackRate = 1;
+      video2.playbackRate = 1;
 
-
-        setTimeout(() => {
-          handleSync();
-          syncTimeoutRef.current = null;
-        }, 200); // Adjust the interval as needed
-      };
-
-
-      video1.addEventListener("timeupdate", throttledSync);
-      video2.addEventListener("timeupdate", throttledSync);
-
-      video1.addEventListener("canplaythrough", () => {
-        handleCanPlay(1)
-      });
-      video2.addEventListener("canplaythrough", () => {
-        handleCanPlay(2)
+      // Add event listeners with better error handling
+      const events = ['play', 'pause', 'seeking', 'waiting', 'playing', 'ended'];
+      events.forEach(event => {
+        video1.addEventListener(event, () => handleVideoEvents(event));
       });
 
-      video1.addEventListener("play", () => { handlePlay(1) });
-      video2.addEventListener("play", () => { handlePlay(2) });
+      // Sync videos every 100ms
+      const syncInterval = setInterval(syncVideos, 100);
 
-      video1.addEventListener("progress", () => {updateBufferedPercentage(video1, 1)});
-      video2.addEventListener("loadeddata", () => {updateBufferedPercentage(video2, 2)});
-
-      video1.addEventListener("stalled", () => { handleStalled(1) });
-      video2.addEventListener("stalled", () => { handleStalled(2) });
-      
-      video1.addEventListener("error", () => { handleError(1) });
-      video2.addEventListener("error", () => { handleError(2) });
-
-      video1.addEventListener("ended", () => handleEnd(1));
-      video2.addEventListener("ended", () => handleEnd(2));
-
+      // Cleanup function
       return () => {
-
-        video1.removeEventListener("timeupdate", throttledSync);
-        video2.removeEventListener("timeupdate", throttledSync);
-
-        video1.removeEventListener("canplaythrough", () => {
-          handleCanPlay(1)
+        events.forEach(event => {
+          video1.removeEventListener(event, () => handleVideoEvents(event));
         });
-        video2.removeEventListener("canplaythrough", () => {
-          handleCanPlay(2)
-        });
-
-
-        video1.removeEventListener("play", () => { handlePlay(1) });
-        video2.removeEventListener("play", () => { handlePlay(2) });
-
-        video1.removeEventListener("progress", () => {updateBufferedPercentage(video1, 1)});
-        video2.removeEventListener("loadeddata", () => {updateBufferedPercentage(video2, 2)});
-
-        video1.removeEventListener("stalled", () => { handleStalled(1) });
-        video2.removeEventListener("stalled", () => { handleStalled(2) });
-        
-        video1.removeEventListener("error", () => { handleError(1) });
-        video2.removeEventListener("error", () => { handleError(2) });
-
-        video1.removeEventListener("ended", () => handleEnd(1));
-        video2.removeEventListener("ended", () => handleEnd(2));
-
-        if (syncTimeoutRef.current) {
-          clearTimeout(syncTimeoutRef.current);
-        }
+        clearInterval(syncInterval);
       };
     }
   }, []);
 
+  // Modify the generateThumbnail function to handle loading better
+  const generateThumbnail = (videoUrl: string) => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.crossOrigin = 'anonymous';
+      video.preload = 'metadata';
+      
+      video.onloadedmetadata = () => {
+        video.currentTime = 0;
+      };
+      
+      video.onseeked = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;  // fallback width
+        canvas.height = video.videoHeight || 360; // fallback height
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        } else {
+          resolve(''); // Fallback if context creation fails
+        }
+      };
+
+      video.onerror = () => {
+        console.error('Error loading video for thumbnail:', videoUrl);
+        resolve(''); // Fallback if video loading fails
+      };
+    });
+  };
+
+  // Update the loadThumbnails function to handle errors better
   useEffect(() => {
-    console.log(videoPlayable.video1Playable,videoPlayable.video2Playable)
-    if ( videoPlayable.video1Playable && videoPlayable.video2Playable) {
-      // console.log("Both videos are ready and page is visible");
-      setTimeout(() => {
-        const playVideo1 = video1Ref.current?.play();
-        const playVideo2 = video2Ref.current?.play();
+    const loadThumbnails = async () => {
+      try {
+        console.log('Starting thumbnail generation...');
+        const thumbnails = {
+          bundle0: {
+            original: await generateThumbnail(videoState.bundles[0].video1),
+            modified: await generateThumbnail(videoState.bundles[0].items[0].video),
+          },
+          bundle1: {
+            original: await generateThumbnail(videoState.bundles[1].video1),
+            modified: await generateThumbnail(videoState.bundles[1].items[0].video),
+          },
+          bundle2: {
+            original: await generateThumbnail(videoState.bundles[2].video1),
+            modified: await generateThumbnail(videoState.bundles[2].items[0].video),
+          },
+          bundle3: {
+            original: await generateThumbnail(videoState.bundles[3].video1),
+            modified: await generateThumbnail(videoState.bundles[3].items[0].video),
+          },
+        };
+        console.log('Thumbnails generated:', thumbnails);
+        setVideoThumbnails(thumbnails);
+      } catch (error) {
+        console.error('Error generating thumbnails:', error);
+      }
+    };
 
-        playVideo1
-          .then(() => {
-            playVideo2?.catch((err) => {
-              console.error("Video 2 play error:", err);
-              video1Ref.current?.pause();
-              video2Ref.current?.pause();
-            });
-          })
-          .catch((err) => {
-            console.error("Video 1 play error:", err);
-            video1Ref.current?.pause();
-            video2Ref.current?.pause();
-          });
-      }, 200);
-    } else {
-      // console.log("Videos not ready or page not visible");
-      // // setTimeout(() => {
-      video1Ref.current?.pause();
-      video2Ref.current?.pause();
+    loadThumbnails();
+  }, [videoState.bundles]); // Add dependency on bundles to ensure thumbnails update if videos change
 
-
-      // }, 200);
-    }
-  }, [videoPlayable]);
-
+  // Update the thumbnail display JSX to include loading states and error handling
+  const renderThumbnailPair = (bundleIndex: number, onClick: () => void) => {
+    const bundleKey = `bundle${bundleIndex}` as keyof typeof videoThumbnails;
+    const thumbnails = videoThumbnails[bundleKey];
+    
+    return (
+      <div className="w-1/2 p-1 relative cursor-pointer hover:opacity-90" onClick={onClick}>
+        <div className="flex h-full bg-gray-800">
+          {thumbnails.original ? (
+            <img 
+              className="w-1/2 h-full object-cover" 
+              src={thumbnails.original} 
+              alt={`Original video ${bundleIndex + 1}`}
+            />
+          ) : (
+            <div className="w-1/2 h-full flex items-center justify-center bg-gray-700">
+              Loading...
+            </div>
+          )}
+          {thumbnails.modified ? (
+            <img 
+              className="w-1/2 h-full object-cover" 
+              src={thumbnails.modified} 
+              alt={`Modified video ${bundleIndex + 1}`}
+            />
+          ) : (
+            <div className="w-1/2 h-full flex items-center justify-center bg-gray-700">
+              Loading...
+            </div>
+          )}
+        </div>
+        <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">
+          Output variation {bundleIndex + 1}
+        </span>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -620,20 +466,20 @@ const BgReplace = () => {
             {
               (syncing) && (
                 <div className='w-full h-full absolute z-9999 flex items-center justify-center'>
-                  {/* <Lottie options={defaultOptions}
+                  <Lottie options={defaultOptions}
                     height={300}
                     width={300}
-
                   // isStopped={this.state.isStopped}
                   // isPaused={this.state.isPaused}
-                  /> */}
-                  <Lottie height={300}
-                    width={300} animationData={animationData} loop={true} />
+                  />
                 </div>
               )
             }
 
-
+            {/* <ReactCompareSlider className='absolute inset-0 bg-cover bg-center'
+              itemOne={<img className='w-full h-full' src="https://images.unsplash.com/photo-1646189985810-b2adb304d18f?q=80&w=1972&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" srcSet="https://images.unsplash.com/photo-1646189985810-b2adb304d18f?q=80&w=1972&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Image one" />}
+              itemTwo={<img className='h-full object-fill' src="https://images.unsplash.com/photo-1657662960615-8cbbda110742?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" srcSet="https://images.unsplash.com/photo-1657662960615-8cbbda110742?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Image two" />}
+            /> */}
             <ReactCompareSlider
               className="absolute h-full"
               itemOne={
@@ -643,13 +489,10 @@ const BgReplace = () => {
                   autoPlay
                   // loop
                   muted
-                  playsInline
                   ref={video1Ref}
-                  preload="auto"
                 >
                   Your browser does not support the video tag.
                 </video>
-
               }
               itemTwo={
                 <video
@@ -658,9 +501,7 @@ const BgReplace = () => {
                   autoPlay
                   // loop
                   muted
-                  playsInline
                   ref={video2Ref}
-                  preload="auto"
                 >
                   Your browser does not support the video tag.
                 </video>
@@ -682,18 +523,9 @@ const BgReplace = () => {
               <span className="text-lg font-semibold text-center text-white bg-black/50 p-2 rounded w-full max-w-full break-words">Apply Backgrounds</span>
 
               <div className='flex gap-5 border rounded-md'>
-                <button onClick={() => { handleBGChange(0,0) }} className="bg-white/30 backdrop-blur-md border border-white/20 text-lg font-semibold text-white hover:bg-white/50 transition duration-300 rounded-lg px-6 py-2 cursor-pointer w-32">
-                  green
-                </button>
-                <button onClick={() => { handleBGChange(1,1) }} className="bg-white/30 backdrop-blur-md border border-white/20 text-lg font-semibold text-white hover:bg-white/50 transition duration-300 rounded-lg px-6 py-2 cursor-pointer w-32">
-                  BG
-                </button>
-                <button onClick={() => { handleBGChange(2,2) }} className="bg-white/30 backdrop-blur-md border border-white/20 text-lg font-semibold text-white hover:bg-white/50 transition duration-300 rounded-lg px-6 py-2 cursor-pointer w-32">
-                  Empty
-                </button>
-                {/* <img src={videoState.image1} onClick={() => { setSubVideo1(0); setCurrentSelection(0) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 0) && 'border-4'}`} />
-                <img src={videoState.image2} onClick={() => { setSubVideo1(1); setCurrentSelection(1) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 1) && 'border-4'}`} />
-                <img src={videoState.image3} onClick={() => { setSubVideo1(2); setCurrentSelection(2) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 2) && 'border-4'}`} /> */}
+                <img src={videoState.image1} onClick={() => { setSubVideo1(0); setCurrentSelection(1) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 1) && 'border-4'}`} />
+                <img src={videoState.image2} onClick={() => { setSubVideo1(1); setCurrentSelection(2) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 2) && 'border-4'}`} />
+                <img src={videoState.image3} onClick={() => { setSubVideo1(2); setCurrentSelection(3) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 3) && 'border-4'}`} />
               </div>
 
               <div className="flex space-x-4">
@@ -708,26 +540,10 @@ const BgReplace = () => {
           </div>
 
           <div className="flex flex-wrap flex-row w-1/2 rounded-lg overflow-hidden">
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(0, 0)}>
-              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1657662960615-8cbbda110742?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
-              <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 1</span>
-              <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 1</span>
-            </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(1, 0)}>
-              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1622649440998-772d29680c57?q=80&w=1935&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
-              <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 2</span>
-              <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 2</span>
-            </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(2, 0)}>
-              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1713907908481-ad7a7b0d1085?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
-              <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 3</span>
-              <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 3</span>
-            </div>
-            <div className="w-1/2 p-1 relative" onClick={() => handleClick(3, 0)}>
-              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1654897385787-be5a68dfdb88?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div>
-              <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">Output variation Image 4</span>
-              <span className="absolute bottom-4 left-4 text-sm font-semibold text-white bg-black/50 p-1 rounded">Description for Image 4</span>
-            </div>
+            {renderThumbnailPair(0, () => handleClick(0, 0, 0))}
+            {renderThumbnailPair(1, () => handleClick(1, 0, 1))}
+            {renderThumbnailPair(2, () => handleClick(2, 0, 1))}
+            {renderThumbnailPair(3, () => handleClick(3, 0, 1))}
           </div>
         </div>
       </div>
@@ -740,18 +556,3 @@ const BgReplace = () => {
 }
 
 export default BgReplace
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
