@@ -50,19 +50,51 @@ import animationData from './new sample vids/Animation - 1736837185654.json'
 // import video2 from './AnimateDiff22_00012-audio.mp4'
 import { useRef, useEffect, useState } from 'react';
 
+interface VideoItem {
+  id: number;
+  image: string;
+  video: string;
+}
+
+interface Bundle {
+  bundleId: number;
+  video1: string;
+  items: VideoItem[];
+}
+
+interface VideoState {
+  currentSelection: {
+    bundleId: number;
+    itemId: number;
+  };
+  video1: string | null;
+  video2: string | null;
+  image1: string;
+  image2: string;
+  image3: string;
+  bundles: Bundle[];
+}
+
+interface VideoThumbnails {
+  [key: string]: {
+    original: string;
+    modified: string;
+  };
+}
+
 const BgReplace = () => {
 
-  const [video1, setVideo1] = useState(video1Import);
-  const [video2, setVideo2] = useState(video2Import);
-  const [syncing, setSyncing] = useState(false);
+  const [video1, setVideo1] = useState<string>(video1Import);
+  const [video2, setVideo2] = useState<string>(video2Import);
+  const [syncing, setSyncing] = useState<boolean>(false);
 
-  const [currentSelection, setCurrentSelection] = useState(1);
+  const [currentSelection, setCurrentSelection] = useState<number>(1);
 
-  const video1Ref = useRef(null);
-  const video2Ref = useRef(null);
-  const syncTimeoutRef = useRef(null);
+  const video1Ref = useRef<HTMLVideoElement>(null);
+  const video2Ref = useRef<HTMLVideoElement>(null);
+  // const syncTimeoutRef = useRef<number | null>(null);
 
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState<number>(0);
 
   const defaultOptions = {
     loop: true,
@@ -73,7 +105,7 @@ const BgReplace = () => {
     }
   };
 
-  const [videoState, setVideoState] = useState({
+  const [videoState, setVideoState] = useState<VideoState>({
     currentSelection: { bundleId: 0, itemId: 0 },
     video1: null,
     video2: null,
@@ -120,14 +152,14 @@ const BgReplace = () => {
     ],
   });
 
-  const [videoThumbnails, setVideoThumbnails] = useState({
+  const [videoThumbnails, setVideoThumbnails] = useState<VideoThumbnails>({
     bundle0: { original: '', modified: '' },
     bundle1: { original: '', modified: '' },
     bundle2: { original: '', modified: '' },
     bundle3: { original: '', modified: '' },
   });
 
-  const handleClick = (bundleId: any, itemId: any, video: any) => {
+  const handleClick = (bundleId: number, itemId: number): void => {
     // Pause both videos before switching
     if (video1Ref.current && video2Ref.current) {
       setSyncing(true)
@@ -173,7 +205,7 @@ const BgReplace = () => {
   };
 
 
-  const setSubVideo1 = (itemId: any) => {
+  const setSubVideo1 = (itemId: number): void => {
     setSyncing(true)
     
     if (video1Ref.current && video2Ref.current) {
@@ -326,7 +358,7 @@ const BgReplace = () => {
   }, []);
 
   // Modify the generateThumbnail function to handle loading better
-  const generateThumbnail = (videoUrl: string) => {
+  const generateThumbnail = (videoUrl: string): Promise<string> => {
     return new Promise((resolve) => {
       const video = document.createElement('video');
       video.src = videoUrl;
@@ -391,7 +423,7 @@ const BgReplace = () => {
   }, [videoState.bundles]); // Add dependency on bundles to ensure thumbnails update if videos change
 
   // Update the thumbnail display JSX to include loading states and error handling
-  const renderThumbnailPair = (bundleIndex: number, onClick: () => void) => {
+  const renderThumbnailPair = (bundleIndex: number, onClick: () => void): JSX.Element => {
     const bundleKey = `bundle${bundleIndex}` as keyof typeof videoThumbnails;
     const thumbnails = videoThumbnails[bundleKey];
     
@@ -540,10 +572,10 @@ const BgReplace = () => {
           </div>
 
           <div className="flex flex-wrap flex-row w-1/2 rounded-lg overflow-hidden">
-            {renderThumbnailPair(0, () => handleClick(0, 0, 0))}
-            {renderThumbnailPair(1, () => handleClick(1, 0, 1))}
-            {renderThumbnailPair(2, () => handleClick(2, 0, 1))}
-            {renderThumbnailPair(3, () => handleClick(3, 0, 1))}
+            {renderThumbnailPair(0, () => handleClick(0, 0))}
+            {renderThumbnailPair(1, () => handleClick(1, 0))}
+            {renderThumbnailPair(2, () => handleClick(2, 0))}
+            {renderThumbnailPair(3, () => handleClick(3, 0))}
           </div>
         </div>
       </div>
