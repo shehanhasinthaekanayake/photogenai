@@ -159,18 +159,40 @@ const BgReplace = () => {
     bundle3: { original: '', modified: '' },
   });
 
+  // Add new loading state
+  const [videosLoading, setVideosLoading] = useState<boolean>(true);
+
+  // Add loading tracking for individual videos
+  const [loadingStatus, setLoadingStatus] = useState({
+    video1: false,
+    video2: false
+  });
+
+  // Function to handle video loading
+  const handleVideoLoad = (videoKey: 'video1' | 'video2') => {
+    setLoadingStatus(prev => ({
+      ...prev,
+      [videoKey]: true
+    }));
+
+    // If both videos are loaded, set videosLoading to false
+    if (videoKey === 'video1' && loadingStatus.video2 || 
+        videoKey === 'video2' && loadingStatus.video1) {
+      setVideosLoading(false);
+    }
+  };
+
   const handleClick = (bundleId: number, itemId: number): void => {
-    // Pause both videos before switching
+    // Reset loading states when changing videos
+    setVideosLoading(true);
+    setLoadingStatus({ video1: false, video2: false });
+
     if (video1Ref.current && video2Ref.current) {
-      setSyncing(true)
+      setSyncing(true);
       video1Ref.current.pause();
       video2Ref.current.pause();
-      const currentTime = video1Ref.current.currentTime; // Get the current playback time
+      const currentTime = video1Ref.current.currentTime;
 
-      console.log("stop the video")
-      // Pause videos
-
-      // Set the state with the new selection
       setVideoState((prevState: any) => ({
         ...prevState,
         currentSelection: { bundleId, itemId },
@@ -181,26 +203,29 @@ const BgReplace = () => {
         image3: videoState?.bundles?.[bundleId].items?.[2].image,
       }));
 
-      // Set the new videos
       setVideo1(videoState?.bundles?.[bundleId].video1);
       setVideo2(videoState?.bundles?.[bundleId].items?.[itemId].video);
 
-      // Delay updating the video refs to allow React to render the new videos
-
-      setTimeout(() => {
-        if (video1Ref.current && video2Ref.current) {
-
-          // Sync the current time for both videos
-          video1Ref.current.currentTime = currentTime;
-          video2Ref.current.currentTime = currentTime;
-
-          // Play both videos
-          video1Ref.current.play();
-          video2Ref.current.play();
-          setSyncing(false)
-
+      // Wait for both videos to load before playing
+      const checkAndPlayVideos = () => {
+        if (!videosLoading) {
+          if (video1Ref.current && video2Ref.current) {
+            video1Ref.current.currentTime = currentTime;
+            video2Ref.current.currentTime = currentTime;
+            video1Ref.current.play();
+            video2Ref.current.play();
+            setSyncing(false);
+          }
         }
-      }, 1000); // Small delay to ensure refs are updated
+      };
+
+      // Watch for loading state changes
+      const loadingInterval = setInterval(() => {
+        if (!videosLoading) {
+          checkAndPlayVideos();
+          clearInterval(loadingInterval);
+        }
+      }, 100);
     }
   };
 
@@ -515,28 +540,50 @@ const BgReplace = () => {
             <ReactCompareSlider
               className="absolute h-full"
               itemOne={
-                <video
-                  className="w-full h-full object-cover"
-                  src={video1}
-                  autoPlay
-                  // loop
-                  muted
-                  ref={video1Ref}
-                >
-                  Your browser does not support the video tag.
-                </video>
+                <div className="relative w-full h-full">
+                  {videosLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                      <Lottie
+                        options={defaultOptions}
+                        height={300}
+                        width={300}
+                      />
+                    </div>
+                  )}
+                  <video
+                    className="w-full h-full object-cover"
+                    src={video1}
+                    autoPlay
+                    muted
+                    ref={video1Ref}
+                    onLoadedData={() => handleVideoLoad('video1')}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
               }
               itemTwo={
-                <video
-                  className="w-full h-full object-cover"
-                  src={video2}
-                  autoPlay
-                  // loop
-                  muted
-                  ref={video2Ref}
-                >
-                  Your browser does not support the video tag.
-                </video>
+                <div className="relative w-full h-full">
+                  {videosLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                      <Lottie
+                        options={defaultOptions}
+                        height={300}
+                        width={300}
+                      />
+                    </div>
+                  )}
+                  <video
+                    className="w-full h-full object-cover"
+                    src={video2}
+                    autoPlay
+                    muted
+                    ref={video2Ref}
+                    onLoadedData={() => handleVideoLoad('video2')}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
               }
             />
 
