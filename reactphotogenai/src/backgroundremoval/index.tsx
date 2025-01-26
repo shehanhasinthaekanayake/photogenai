@@ -96,7 +96,7 @@ const BgReplace = () => {
 
   const video1Ref = useRef<VideoRef>(null);
   const video2Ref = useRef<VideoRef>(null);
-  // const syncTimeoutRef = useRef<number | null>(null);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [progress, setProgress] = useState<number>(0);
 
@@ -188,10 +188,10 @@ const BgReplace = () => {
       [videoKey]: true
     }));
 
-    // If both videos are loaded, set videosLoading to false
-    if (videoKey === 'video1' && loadingStatus.video2 || 
-        videoKey === 'video2' && loadingStatus.video1) {
+    // Check if both videos are loaded
+    if (loadingStatus.video1 && loadingStatus.video2) {
       setVideosLoading(false);
+      setSyncing(false);
     }
   };
 
@@ -203,26 +203,38 @@ const BgReplace = () => {
     setVideosLoading(false);
   };
 
-  // Update the loadThumbnails function to return a promise
+  // Add timeout for loading state
+  useEffect(() => {
+    const loadingTimeout = setTimeout(() => {
+      if (videosLoading) {
+        setVideosLoading(false);
+        console.log('Force stopped loading after timeout');
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(loadingTimeout);
+  }, [videosLoading]);
+
+  // Update the loadThumbnails function
   const loadThumbnails = async () => {
     try {
       console.log('Starting thumbnail generation...');
       const thumbnails = {
         bundle0: {
-          original: await generateThumbnail(videoState.bundles[0].video1),
-          modified: await generateThumbnail(videoState.bundles[0].items[0].video),
+          original: await generateThumbnail(videoState.bundles[0].video1, 2000),
+          modified: await generateThumbnail(videoState.bundles[0].items[0].video, 2000),
         },
         bundle1: {
-          original: await generateThumbnail(videoState.bundles[1].video1),
-          modified: await generateThumbnail(videoState.bundles[1].items[0].video),
+          original: await generateThumbnail(videoState.bundles[1].video1, 2000),
+          modified: await generateThumbnail(videoState.bundles[1].items[0].video, 2000),
         },
         bundle2: {
-          original: await generateThumbnail(videoState.bundles[2].video1),
-          modified: await generateThumbnail(videoState.bundles[2].items[0].video),
+          original: await generateThumbnail(videoState.bundles[2].video1, 2000),
+          modified: await generateThumbnail(videoState.bundles[2].items[0].video, 2000),
         },
         bundle3: {
-          original: await generateThumbnail(videoState.bundles[3].video1),
-          modified: await generateThumbnail(videoState.bundles[3].items[0].video),
+          original: await generateThumbnail(videoState.bundles[3].video1, 2000),
+          modified: await generateThumbnail(videoState.bundles[3].items[0].video, 2000),
         },
       };
       console.log('Thumbnails generated:', thumbnails);
@@ -230,8 +242,14 @@ const BgReplace = () => {
       setThumbnailsLoaded(true);
     } catch (error) {
       console.error('Error generating thumbnails:', error);
-      // Set thumbnails loaded even on error to prevent infinite loading
-      setThumbnailsLoaded(true);
+      setThumbnailsLoaded(true); // Set to true even on error to prevent infinite loading
+      // Set default thumbnails or error state
+      setVideoThumbnails({
+        bundle0: { original: '', modified: '' },
+        bundle1: { original: '', modified: '' },
+        bundle2: { original: '', modified: '' },
+        bundle3: { original: '', modified: '' },
+      });
     }
   };
 
@@ -257,19 +275,21 @@ const BgReplace = () => {
     initializeVideos();
   }, []);
 
-  // Update handleClick to check for thumbnails
+  // Update handleClick with better loading management
   const handleClick = (bundleId: number, itemId: number): void => {
-    if (!thumbnailsLoaded) {
-      console.log('Waiting for thumbnails to load...');
-      return;
+    if (!thumbnailsLoaded) return;
+
+    // Clear any existing sync timeout
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
     }
 
     setVideosLoading(true);
+    setSyncing(true);
     setLoadingStatus({ video1: false, video2: false });
 
     const currentTime = video1Ref.current?.currentTime || 0;
-    
-    // Update video sources first
+
     setVideoState(prevState => ({
       ...prevState,
       currentSelection: { bundleId, itemId },
@@ -283,29 +303,22 @@ const BgReplace = () => {
     setVideo1(videoState.bundles[bundleId].video1);
     setVideo2(videoState.bundles[bundleId].items[itemId].video);
 
-    // Wait for videos to load before playing
-    const checkAndPlayVideos = () => {
-      if (!videosLoading && video1Ref.current && video2Ref.current) {
-        video1Ref.current.currentTime = currentTime;
-        video2Ref.current.currentTime = currentTime;
-        Promise.all([
-          video1Ref.current.play(),
-          video2Ref.current.play()
-        ]).catch(error => console.error("Error playing videos:", error));
-        setSyncing(false);
-      }
-    };
-
-    const loadingInterval = setInterval(() => {
-      if (!videosLoading) {
-        checkAndPlayVideos();
-        clearInterval(loadingInterval);
-      }
-    }, 100);
+    // Set a timeout to force stop loading state
+    syncTimeoutRef.current = setTimeout(() => {
+      setVideosLoading(false);
+      setSyncing(false);
+    }, 5000); // 5 second timeout
   };
 
+  // Update setSubVideo1 with better loading management
   const setSubVideo1 = (itemId: number): void => {
+    // Clear any existing sync timeout
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
     setSyncing(true);
+    setVideosLoading(true);
     const currentTime = video1Ref.current?.currentTime || 0;
 
     setVideoState(prevState => ({
@@ -319,133 +332,59 @@ const BgReplace = () => {
     const newVideo = videoState.bundles[videoState.currentSelection.bundleId].items[itemId].video;
     setVideo2(newVideo);
 
-    // Wait for the new video to load
-    setTimeout(() => {
+    // Set a timeout to force stop loading state
+    syncTimeoutRef.current = setTimeout(() => {
       if (video1Ref.current && video2Ref.current) {
         video2Ref.current.currentTime = currentTime;
         Promise.all([
           video1Ref.current.play(),
           video2Ref.current.play()
-        ]).catch(error => console.error("Error playing videos:", error));
+        ]).catch(error => console.error("Error playing videos:", error))
+        .finally(() => {
+          setVideosLoading(false);
+          setSyncing(false);
+        });
+      } else {
+        setVideosLoading(false);
         setSyncing(false);
       }
-    }, 500);
+    }, 1000);
   };
 
+  // Cleanup timeouts on unmount
   useEffect(() => {
-    // Initial video and background setup
-    setVideo1(videoState?.bundles?.[0].video1);
-    setVideo2(videoState?.bundles?.[0].items?.[0].video);
-    
-    // Set the initial backgrounds
-    setVideoState((prevState: any) => ({
-      ...prevState,
-      image1: videoState?.bundles?.[0].items?.[0].image,
-      image2: videoState?.bundles?.[0].items?.[1].image,
-      image3: videoState?.bundles?.[0].items?.[2].image,
-      currentSelection: { bundleId: 0, itemId: 0 }
-    }));
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
   }, []);
 
-  // Update backgrounds whenever video1 changes
-  useEffect(() => {
-    const currentBundleId = videoState.bundles.findIndex(bundle => bundle.video1 === video1);
-    if (currentBundleId !== -1) {
-      setVideoState((prevState: any) => ({
-        ...prevState,
-        image1: videoState.bundles[currentBundleId].items[0].image,
-        image2: videoState.bundles[currentBundleId].items[1].image,
-        image3: videoState.bundles[currentBundleId].items[2].image,
-        currentSelection: { bundleId: currentBundleId, itemId: 0 }
-      }));
-    }
-  }, [video1]);
-
-  // Update video sync logic with better buffering handling
+  // Update video sync effect
   useEffect(() => {
     const video1Element = video1Ref.current;
     const video2Element = video2Ref.current;
 
     if (!video1Element || !video2Element) return;
 
-    const syncVideos = () => {
-      if (!video1Element || !video2Element || syncing) return;
-
-      const timeDiff = Math.abs(video1Element.currentTime - video2Element.currentTime);
-      if (timeDiff > 0.05) {
-        video2Element.currentTime = video1Element.currentTime;
-      }
-
-      setProgress((video1Element.currentTime / (video1Element.duration || 1)) * 100);
-    };
-
-    const handleVideoEvent = async (event: string) => {
-      if (!video1Element || !video2Element) return;
-
-      switch (event) {
-        case 'play':
-          try {
-            await Promise.all([video1Element.play(), video2Element.play()]);
-          } catch (error) {
-            console.error('Error playing videos:', error);
-          }
-          break;
-        case 'pause':
-          video1Element.pause();
-          video2Element.pause();
-          break;
-        case 'seeking':
-          setSyncing(true);
-          video2Element.currentTime = video1Element.currentTime;
-          setSyncing(false);
-          break;
-        case 'waiting':
-          video1Element.pause();
-          video2Element.pause();
-          setSyncing(true);
-          break;
-        case 'playing':
-          if (syncing) {
-            try {
-              video2Element.currentTime = video1Element.currentTime;
-              await Promise.all([video1Element.play(), video2Element.play()]);
-              setSyncing(false);
-            } catch (error) {
-              console.error('Error resuming videos:', error);
-            }
-          }
-          break;
-        case 'ended':
-          video1Element.currentTime = 0;
-          video2Element.currentTime = 0;
-          try {
-            await Promise.all([video1Element.play(), video2Element.play()]);
-          } catch (error) {
-            console.error('Error restarting videos:', error);
-          }
-          break;
+    const handleLoadedData = () => {
+      if (video1Element.readyState >= 3 && video2Element.readyState >= 3) {
+        setVideosLoading(false);
+        setSyncing(false);
       }
     };
 
-    const events = ['play', 'pause', 'seeking', 'waiting', 'playing', 'ended'];
-    const eventListeners = events.map(event => {
-      const listener = () => handleVideoEvent(event);
-      video1Element.addEventListener(event, listener);
-      return { event, listener };
-    });
-
-    const syncInterval = setInterval(syncVideos, 50);
+    video1Element.addEventListener('loadeddata', handleLoadedData);
+    video2Element.addEventListener('loadeddata', handleLoadedData);
 
     return () => {
-      eventListeners.forEach(({ event, listener }) => {
-        video1Element?.removeEventListener(event, listener);
-      });
-      clearInterval(syncInterval);
+      video1Element.removeEventListener('loadeddata', handleLoadedData);
+      video2Element.removeEventListener('loadeddata', handleLoadedData);
     };
-  }, [syncing]);
+  }, [video1, video2]);
 
-  // Update thumbnail generation to maintain aspect ratio
-  const generateThumbnail = async (videoUrl: string): Promise<string> => {
+  // Update the generateThumbnail function with better error handling
+  const generateThumbnail = async (videoUrl: string, timeout: number = 5000): Promise<string> => {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
       video.src = videoUrl;
@@ -454,51 +393,29 @@ const BgReplace = () => {
 
       const timeoutId = setTimeout(() => {
         reject(new Error('Thumbnail generation timeout'));
-      }, 10000);
+      }, timeout);
 
       video.onloadedmetadata = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          clearTimeout(timeoutId);
-          reject(new Error('Failed to get canvas context'));
-          return;
-        }
-
-        // Set canvas dimensions to match video aspect ratio
-        const aspectRatio = video.videoWidth / video.videoHeight;
-        const maxWidth = 320;
-        const maxHeight = 180;
-        let width = video.videoWidth;
-        let height = video.videoHeight;
-
-        if (width > maxWidth) {
-          width = maxWidth;
-          height = width / aspectRatio;
-        }
-
-        if (height > maxHeight) {
-          height = maxHeight;
-          width = height * aspectRatio;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        // Capture the first frame
-        video.currentTime = 0.1; // Slightly offset to ensure the frame is loaded
+        video.currentTime = 0.1; // Set to first frame
       };
 
-      video.onseeked = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
+      video.onloadeddata = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 320; // Fixed width
+          canvas.height = 180; // Fixed height (16:9 aspect ratio)
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            throw new Error('Failed to get canvas context');
+          }
+
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           clearTimeout(timeoutId);
-          resolve(canvas.toDataURL('image/jpeg', 0.85)); // Increased quality
-        } else {
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        } catch (error) {
           clearTimeout(timeoutId);
-          reject(new Error('Failed to get canvas context'));
+          reject(error);
         }
       };
 
@@ -509,44 +426,50 @@ const BgReplace = () => {
     });
   };
 
-  // Update the thumbnail display component to maintain aspect ratio
+  // Update the renderThumbnailPair function
   const renderThumbnailPair = (bundleIndex: number, onClick: () => void): JSX.Element => {
     const bundleKey = `bundle${bundleIndex}` as keyof typeof videoThumbnails;
     const thumbnails = videoThumbnails[bundleKey];
     
     return (
-      <div className="w-1/2 p-1 relative cursor-pointer hover:opacity-90" onClick={onClick}>
-        <div className="flex h-full bg-gray-800">
-          {thumbnails.original ? (
-            <div className="w-1/2 h-full flex items-center justify-center overflow-hidden">
+      <div className="w-full h-full relative cursor-pointer group">
+        <div className="flex h-full bg-purple-900/20 rounded-xl overflow-hidden">
+          <div className="w-1/2 h-full flex items-center justify-center overflow-hidden">
+            {thumbnails.original ? (
               <img 
-                className="w-full h-full object-contain" 
-                src={thumbnails.original} 
+                className="w-full h-full object-cover"
+                src={thumbnails.original}
                 alt={`Original video ${bundleIndex + 1}`}
+                onError={(e) => {
+                  e.currentTarget.src = 'fallback-image-url.jpg'; // Add a fallback image
+                }}
               />
-            </div>
-          ) : (
-            <div className="w-1/2 h-full flex items-center justify-center bg-gray-700">
-              <div className="animate-pulse">Loading...</div>
-            </div>
-          )}
-          {thumbnails.modified ? (
-            <div className="w-1/2 h-full flex items-center justify-center overflow-hidden">
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-purple-800/20">
+                <span className="text-white/60">Loading...</span>
+              </div>
+            )}
+          </div>
+          <div className="w-1/2 h-full flex items-center justify-center overflow-hidden">
+            {thumbnails.modified ? (
               <img 
-                className="w-full h-full object-contain" 
-                src={thumbnails.modified} 
+                className="w-full h-full object-cover"
+                src={thumbnails.modified}
                 alt={`Modified video ${bundleIndex + 1}`}
+                onError={(e) => {
+                  e.currentTarget.src = 'fallback-image-url.jpg'; // Add a fallback image
+                }}
               />
-            </div>
-          ) : (
-            <div className="w-1/2 h-full flex items-center justify-center bg-gray-700">
-              <div className="animate-pulse">Loading...</div>
-            </div>
-          )}
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-purple-800/20">
+                <span className="text-white/60">Loading...</span>
+              </div>
+            )}
+          </div>
         </div>
-        <span className="absolute top-4 left-4 mt-8 text-3xl font-bold text-white bg-black/50 p-2 rounded">
+        <div className="absolute top-4 left-4 text-xl font-bold text-white bg-purple-900/80 px-4 py-2 rounded-lg">
           Output variation {bundleIndex + 1}
-        </span>
+        </div>
       </div>
     );
   };
@@ -592,58 +515,66 @@ const BgReplace = () => {
 
   return (
     <>
-      <div className="bg-[#121212] min-h-screen max-h-screen flex flex-col relative p-4 text-white">
-        <div className="mb-2 p-4 justify-between rounded-lg shadow-lg flex flex-col items-center">
-          <span className="text-4xl font-bold text-white"><img src={logo} className="w-36"></img></span>
-          <div className="flex flex-row items-center my-1 justify-center gap-2 ml-4">
-            <span className="text-md font-semibold text-white mt-2">Unlock your creativity and start designing amazing projects today!</span>
-            <div className="flex gap-4">
-              <div>
-                <a className="inline-flex justify-center whitespace-nowrap rounded-lg px-3.5 py-2.5 text-sm font-medium text-slate-200 dark:text-slate-800 bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-200 dark:to-slate-100 dark:hover:bg-slate-100 shadow focus:outline-none focus:ring focus:ring-slate-500/50 focus-visible:outline-none focus-visible:ring focus-visible:ring-slate-500/50 relative before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(45deg,transparent_25%,theme(colors.white/.5)_50%,transparent_75%,transparent_100%)] dark:before:bg-[linear-gradient(45deg,transparent_25%,theme(colors.white)_50%,transparent_75%,transparent_100%)] before:bg-[length:250%_250%,100%_100%] before:bg-[position:200%_0,0_0] before:bg-no-repeat before:[transition:background-position_0s_ease] hover:before:bg-[position:-100%_0,0_0] hover:before:duration-[1500ms]" href="#0">Get started</a>
-              </div>
-
+      <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen max-h-screen flex flex-col relative p-4 text-white">
+        {/* Header Section */}
+        <div className="mb-4 p-6 justify-between rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 shadow-xl transition-all duration-300 hover:bg-white/10">
+          <div className="flex flex-col items-center space-y-4">
+            {/* Logo with animation */}
+            <div className="transform hover:scale-105 transition-transform duration-300">
+              <img src={logo} className="w-40 animate-fade-in" alt="Logo" />
+            </div>
+            
+            {/* Tagline with gradient text */}
+            <div className="flex flex-row items-center justify-center gap-4">
+              <span className="text-xl font-semibold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Unlock your creativity and start designing amazing projects today!
+              </span>
+              
+              {/* CTA Button with gradient and animation */}
+              <a className="relative inline-flex items-center justify-center px-6 py-3 overflow-hidden font-bold text-white rounded-lg group">
+                <span className="absolute w-full h-full bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 absolute"></span>
+                <span className="relative px-6 py-3 transition-all ease-out bg-gray-900 rounded-lg group-hover:bg-opacity-0 duration-400">
+                  Get Started
+                </span>
+              </a>
             </div>
           </div>
-          <div className="flex flex-row justify-between p-2 gap-2 bg-white/5 h-fit rounded-lg shadow-lg border border-white/20">
-            <span className="text-md font-bold text-white hover:text-gray-400 transition duration-300 cursor-pointer">Architectural Design</span>
-            <span className="text-md font-bold text-white hover:text-gray-400 transition duration-300 cursor-pointer">Tryon Cloths</span>
-            <span className="text-md font-bold text-white hover:text-gray-400 transition duration-300 cursor-pointer">Sketch to Image</span>
-            <span className="text-md font-bold text-white hover:text-gray-400 transition duration-300 cursor-pointer">Text to Image</span>
+
+          {/* Navigation Menu */}
+          <div className="flex flex-row justify-between p-4 mt-4 gap-4 bg-white/5 rounded-xl backdrop-blur-md border border-white/10">
+            {['Architectural Design', 'Tryon Cloths', 'Sketch to Image', 'Text to Image'].map((item) => (
+              <button key={item} className="text-md font-medium text-white/80 hover:text-white transition-all duration-300 hover:scale-105 px-4 py-2 rounded-lg hover:bg-white/10">
+                {item}
+              </button>
+            ))}
           </div>
         </div>
 
-
-
-
-
-        <div className="flex flex-row relative flex-grow rounded-lg overflow-hidden">
-          <div className="absolute z-50 w-full">
-            <div className="flex flex-row text-center justify-evenly items-center mb-2 p-2 rounded-lg shadow-lg border border-white/20 bg-white/30 backdrop-blur-md">
-              <span className="text-md font-bold text-gray-300 text-center hover:text-gray-200 transition duration-300 cursor-pointer border border-black/20 p-1 rounded">Input Image</span>
-              <span className="text-md font-bold text-gray-300 text-center hover:text-gray-200 transition duration-300 cursor-pointer border border-black/20 p-1 rounded">Output Images</span>
+        {/* Main Content Section */}
+        <div className="flex flex-row relative flex-grow rounded-2xl overflow-hidden bg-white/5 backdrop-blur-md border border-white/10">
+          {/* Tab Navigation */}
+          <div className="absolute z-50 w-full p-4">
+            <div className="flex flex-row justify-center gap-4 mb-2">
+              {['Input Image', 'Output Images'].map((tab) => (
+                <button key={tab} className="px-6 py-2 text-white/90 font-medium rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105">
+                  {tab}
+                </button>
+              ))}
             </div>
           </div>
-          <div className="w-1/2 flex items-center justify-center relative mt-8 bg-slate-900">
 
-            {
-              (syncing) && (
-                <div className='w-full h-full absolute z-9999 flex items-center justify-center'>
-                  <Lottie options={defaultOptions}
-                    height={300}
-                    width={300}
-                  // isStopped={this.state.isStopped}
-                  // isPaused={this.state.isPaused}
-                  />
-                </div>
-              )
-            }
+          {/* Video Comparison Section */}
+          <div className="w-1/2 flex items-center justify-center relative mt-16 bg-gradient-to-br from-slate-800 to-slate-900">
+            {/* Only show loading animation when actually loading or syncing */}
+            {(videosLoading || syncing) && (
+              <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                <Lottie options={defaultOptions} height={300} width={300} />
+              </div>
+            )}
 
-            {/* <ReactCompareSlider className='absolute inset-0 bg-cover bg-center'
-              itemOne={<img className='w-full h-full' src="https://images.unsplash.com/photo-1646189985810-b2adb304d18f?q=80&w=1972&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" srcSet="https://images.unsplash.com/photo-1646189985810-b2adb304d18f?q=80&w=1972&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Image one" />}
-              itemTwo={<img className='h-full object-fill' src="https://images.unsplash.com/photo-1657662960615-8cbbda110742?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" srcSet="https://images.unsplash.com/photo-1657662960615-8cbbda110742?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Image two" />}
-            /> */}
+            {/* Video Compare Slider */}
             <ReactCompareSlider
-              className="absolute h-full"
+              className="absolute h-full transition-opacity duration-300"
               itemOne={
                 <div className="relative w-full h-full">
                   {(!thumbnailsLoaded || videosLoading) && (
@@ -694,23 +625,20 @@ const BgReplace = () => {
               }
             />
 
-
-
-
-            {/* <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1646189985810-b2adb304d18f?q=80&w=1972&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)' }}></div> */}
-            <span className="absolute top-4 left-4 text-3xl font-bold text-white bg-black/50 p-2 rounded">Input Image</span>
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center space-y-2">
-              <div className="w-full bg-white/30 backdrop-blur-md border border-white/20 rounded-full h-2">
+            {/* Controls Section */}
+            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-xl px-6">
+              {/* Progress Bar */}
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-4">
                 <div
-                  className="bg-white/60 h-2 rounded-full"
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 ></div>
               </div>
-              
-              {/* Add play button before the "Apply Backgrounds" text */}
-              <div 
-                className="flex items-center justify-center cursor-pointer bg-white/30 backdrop-blur-md border border-white/20 rounded-full p-2 hover:bg-white/50 transition-all"
+
+              {/* Play/Pause Button */}
+              <button
                 onClick={togglePlayPause}
+                className="mb-4 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-110"
               >
                 {isPlaying ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -722,32 +650,49 @@ const BgReplace = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 )}
+              </button>
+
+              {/* Background Selection */}
+              <div className="flex justify-center gap-4 mb-4">
+                {[videoState.image1, videoState.image2, videoState.image3].map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => { setSubVideo1(index); setCurrentSelection(index + 1) }}
+                    className={`w-12 h-12 rounded-lg overflow-hidden transition-all duration-300 hover:scale-110 ${
+                      currentSelection === index + 1 ? 'ring-2 ring-purple-500 scale-110' : ''
+                    }`}
+                  >
+                    <img src={image} className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
 
-              <span className="text-lg font-semibold text-center text-white bg-black/50 p-2 rounded w-full max-w-full break-words">Apply Backgrounds</span>
-
-              <div className='flex gap-5 border rounded-md'>
-                <img src={videoState.image1} onClick={() => { setSubVideo1(0); setCurrentSelection(1) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 1) && 'border-4'}`} />
-                <img src={videoState.image2} onClick={() => { setSubVideo1(1); setCurrentSelection(2) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 2) && 'border-4'}`} />
-                <img src={videoState.image3} onClick={() => { setSubVideo1(2); setCurrentSelection(3) }} className={`w-10 h-10 bg-green-700 border-2 border-white cursor-pointer ${(currentSelection == 3) && 'border-4'}`} />
-              </div>
-
-              <div className="flex space-x-4">
-                <button className="bg-white/30 backdrop-blur-md border border-white/20 text-lg font-semibold text-white hover:bg-white/50 transition duration-300 rounded-lg px-6 py-2 cursor-pointer w-32">
-                  Previous
-                </button>
-                <button className="bg-white/30 backdrop-blur-md border border-white/20 text-lg font-semibold text-white hover:bg-white/50 transition duration-300 rounded-lg px-6 py-2 cursor-pointer w-32">
-                  Next
-                </button>
+              {/* Navigation Buttons */}
+              <div className="flex justify-center gap-4">
+                {['Previous', 'Next'].map((btn) => (
+                  <button
+                    key={btn}
+                    className="px-6 py-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 font-medium"
+                  >
+                    {btn}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap flex-row w-1/2 rounded-lg overflow-hidden">
-            {renderThumbnailPair(0, () => handleClick(0, 0))}
-            {renderThumbnailPair(1, () => handleClick(1, 0))}
-            {renderThumbnailPair(2, () => handleClick(2, 0))}
-            {renderThumbnailPair(3, () => handleClick(3, 0))}
+          {/* Thumbnails Grid */}
+          <div className="w-1/2 grid grid-cols-2 gap-4 p-4">
+            {[0, 1, 2, 3].map((index) => (
+              <div
+                key={index}
+                onClick={() => handleClick(index, 0)}
+                className="relative group rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 cursor-pointer"
+              >
+                {renderThumbnailPair(index, () => {})}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -755,8 +700,19 @@ const BgReplace = () => {
       <Youtube />
       <Pricing />
     </>
-
   );
 }
+
+// Add these animations to your global CSS or Tailwind config
+const customStyles = `
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+`;
 
 export default BgReplace

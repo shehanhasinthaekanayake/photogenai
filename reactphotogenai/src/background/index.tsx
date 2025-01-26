@@ -1,7 +1,7 @@
-import 'swiper/css';
-import 'swiper/css/effect-coverflow';
-import 'swiper/css/pagination';
-import logo from './2.33x/Asset 3.png'
+// import 'swiper/css';
+// import 'swiper/css/effect-coverflow';
+// import 'swiper/css/pagination';
+import logo from '../2.33x/Asset 3.png'
 import { Youtube } from '../components/tutorial/youtube';
 import { Pricing } from '../components/pricing/pricing';
 
