@@ -14,8 +14,8 @@ interface VideoItem {
 
 const BgRemovalApp = () => {
   const [videos, setVideos] = useState<VideoItem[]>([]);
-  const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedVideo, ] = useState<VideoItem | null>(null);
+  const [isPlaying, ] = useState(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

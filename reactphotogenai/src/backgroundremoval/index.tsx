@@ -98,7 +98,7 @@ const BgReplace = () => {
   const video2Ref = useRef<VideoRef>(null);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [progress, setProgress] = useState<number>(0);
+  const [progress, ] = useState<number>(0);
 
   const defaultOptions = {
     loop: true,
@@ -173,7 +173,7 @@ const BgReplace = () => {
   });
 
   // Add error boundaries
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   // Add new state for thumbnail loading
   const [thumbnailsLoaded, setThumbnailsLoaded] = useState<boolean>(false);
@@ -288,7 +288,6 @@ const BgReplace = () => {
     setSyncing(true);
     setLoadingStatus({ video1: false, video2: false });
 
-    const currentTime = video1Ref.current?.currentTime || 0;
 
     setVideoState(prevState => ({
       ...prevState,
@@ -427,7 +426,7 @@ const BgReplace = () => {
   };
 
   // Update the renderThumbnailPair function
-  const renderThumbnailPair = (bundleIndex: number, onClick: () => void): JSX.Element => {
+  const renderThumbnailPair = (bundleIndex: number): JSX.Element => {
     const bundleKey = `bundle${bundleIndex}` as keyof typeof videoThumbnails;
     const thumbnails = videoThumbnails[bundleKey];
     
@@ -593,7 +592,7 @@ const BgReplace = () => {
                     muted
                     ref={video1Ref}
                     onLoadedData={() => handleVideoLoad('video1')}
-                    onError={(e) => handleVideoError(e.error)}
+                    onError={() => handleVideoError(new Error('Video failed to load.'))}
                   >
                     Your browser does not support the video tag.
                   </video>
@@ -617,7 +616,7 @@ const BgReplace = () => {
                     muted
                     ref={video2Ref}
                     onLoadedData={() => handleVideoLoad('video2')}
-                    onError={(e) => handleVideoError(e.error)}
+                    onError={() => handleVideoError(new Error('Video failed to load.'))}
                   >
                     Your browser does not support the video tag.
                   </video>
@@ -689,7 +688,7 @@ const BgReplace = () => {
                 onClick={() => handleClick(index, 0)}
                 className="relative group rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 cursor-pointer"
               >
-                {renderThumbnailPair(index, () => {})}
+                {renderThumbnailPair(index)}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
             ))}
@@ -703,16 +702,5 @@ const BgReplace = () => {
   );
 }
 
-// Add these animations to your global CSS or Tailwind config
-const customStyles = `
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
-  }
-`;
 
 export default BgReplace
