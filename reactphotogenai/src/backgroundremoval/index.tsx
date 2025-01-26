@@ -82,6 +82,10 @@ interface VideoThumbnails {
   };
 }
 
+interface VideoRef extends HTMLVideoElement {
+  // Add any additional properties if needed
+}
+
 const BgReplace = () => {
 
   const [video1, setVideo1] = useState<string>(video1Import);
@@ -90,8 +94,8 @@ const BgReplace = () => {
 
   const [currentSelection, setCurrentSelection] = useState<number>(1);
 
-  const video1Ref = useRef<HTMLVideoElement>(null);
-  const video2Ref = useRef<HTMLVideoElement>(null);
+  const video1Ref = useRef<VideoRef>(null);
+  const video2Ref = useRef<VideoRef>(null);
   // const syncTimeoutRef = useRef<number | null>(null);
 
   const [progress, setProgress] = useState<number>(0);
@@ -168,6 +172,15 @@ const BgReplace = () => {
     video2: false
   });
 
+  // Add error boundaries
+  const [error, setError] = useState<string | null>(null);
+
+  // Add new state for thumbnail loading
+  const [thumbnailsLoaded, setThumbnailsLoaded] = useState<boolean>(false);
+
+  // Add new state for play/pause
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
   // Function to handle video loading
   const handleVideoLoad = (videoKey: 'video1' | 'video2') => {
     setLoadingStatus(prev => ({
@@ -182,90 +195,142 @@ const BgReplace = () => {
     }
   };
 
-  const handleClick = (bundleId: number, itemId: number): void => {
-    // Reset loading states when changing videos
-    setVideosLoading(true);
-    setLoadingStatus({ video1: false, video2: false });
+  // Add error handling to video operations
+  const handleVideoError = (error: Error) => {
+    console.error('Video error:', error);
+    setError('Failed to load or play video. Please try again.');
+    setSyncing(false);
+    setVideosLoading(false);
+  };
 
-    if (video1Ref.current && video2Ref.current) {
-      setSyncing(true);
-      video1Ref.current.pause();
-      video2Ref.current.pause();
-      const currentTime = video1Ref.current.currentTime;
-
-      setVideoState((prevState: any) => ({
-        ...prevState,
-        currentSelection: { bundleId, itemId },
-        video1: videoState?.bundles?.[bundleId].video1,
-        video2: videoState?.bundles?.[bundleId].items?.[itemId].video,
-        image1: videoState?.bundles?.[bundleId].items?.[0].image,
-        image2: videoState?.bundles?.[bundleId].items?.[1].image,
-        image3: videoState?.bundles?.[bundleId].items?.[2].image,
-      }));
-
-      setVideo1(videoState?.bundles?.[bundleId].video1);
-      setVideo2(videoState?.bundles?.[bundleId].items?.[itemId].video);
-
-      // Wait for both videos to load before playing
-      const checkAndPlayVideos = () => {
-        if (!videosLoading) {
-          if (video1Ref.current && video2Ref.current) {
-            video1Ref.current.currentTime = currentTime;
-            video2Ref.current.currentTime = currentTime;
-            video1Ref.current.play();
-            video2Ref.current.play();
-            setSyncing(false);
-          }
-        }
+  // Update the loadThumbnails function to return a promise
+  const loadThumbnails = async () => {
+    try {
+      console.log('Starting thumbnail generation...');
+      const thumbnails = {
+        bundle0: {
+          original: await generateThumbnail(videoState.bundles[0].video1),
+          modified: await generateThumbnail(videoState.bundles[0].items[0].video),
+        },
+        bundle1: {
+          original: await generateThumbnail(videoState.bundles[1].video1),
+          modified: await generateThumbnail(videoState.bundles[1].items[0].video),
+        },
+        bundle2: {
+          original: await generateThumbnail(videoState.bundles[2].video1),
+          modified: await generateThumbnail(videoState.bundles[2].items[0].video),
+        },
+        bundle3: {
+          original: await generateThumbnail(videoState.bundles[3].video1),
+          modified: await generateThumbnail(videoState.bundles[3].items[0].video),
+        },
       };
-
-      // Watch for loading state changes
-      const loadingInterval = setInterval(() => {
-        if (!videosLoading) {
-          checkAndPlayVideos();
-          clearInterval(loadingInterval);
-        }
-      }, 100);
+      console.log('Thumbnails generated:', thumbnails);
+      setVideoThumbnails(thumbnails);
+      setThumbnailsLoaded(true);
+    } catch (error) {
+      console.error('Error generating thumbnails:', error);
+      // Set thumbnails loaded even on error to prevent infinite loading
+      setThumbnailsLoaded(true);
     }
   };
 
+  // Update the initial useEffect to wait for thumbnails
+  useEffect(() => {
+    const initializeVideos = async () => {
+      // Load thumbnails first
+      await loadThumbnails();
+      
+      // Only proceed with video setup after thumbnails are loaded
+      setVideo1(videoState?.bundles?.[0].video1);
+      setVideo2(videoState?.bundles?.[0].items?.[0].video);
+      
+      setVideoState((prevState: any) => ({
+        ...prevState,
+        image1: videoState?.bundles?.[0].items?.[0].image,
+        image2: videoState?.bundles?.[0].items?.[1].image,
+        image3: videoState?.bundles?.[0].items?.[2].image,
+        currentSelection: { bundleId: 0, itemId: 0 }
+      }));
+    };
+
+    initializeVideos();
+  }, []);
+
+  // Update handleClick to check for thumbnails
+  const handleClick = (bundleId: number, itemId: number): void => {
+    if (!thumbnailsLoaded) {
+      console.log('Waiting for thumbnails to load...');
+      return;
+    }
+
+    setVideosLoading(true);
+    setLoadingStatus({ video1: false, video2: false });
+
+    const currentTime = video1Ref.current?.currentTime || 0;
+    
+    // Update video sources first
+    setVideoState(prevState => ({
+      ...prevState,
+      currentSelection: { bundleId, itemId },
+      video1: videoState.bundles[bundleId].video1,
+      video2: videoState.bundles[bundleId].items[itemId].video,
+      image1: videoState.bundles[bundleId].items[0].image,
+      image2: videoState.bundles[bundleId].items[1].image,
+      image3: videoState.bundles[bundleId].items[2].image,
+    }));
+
+    setVideo1(videoState.bundles[bundleId].video1);
+    setVideo2(videoState.bundles[bundleId].items[itemId].video);
+
+    // Wait for videos to load before playing
+    const checkAndPlayVideos = () => {
+      if (!videosLoading && video1Ref.current && video2Ref.current) {
+        video1Ref.current.currentTime = currentTime;
+        video2Ref.current.currentTime = currentTime;
+        Promise.all([
+          video1Ref.current.play(),
+          video2Ref.current.play()
+        ]).catch(error => console.error("Error playing videos:", error));
+        setSyncing(false);
+      }
+    };
+
+    const loadingInterval = setInterval(() => {
+      if (!videosLoading) {
+        checkAndPlayVideos();
+        clearInterval(loadingInterval);
+      }
+    }, 100);
+  };
 
   const setSubVideo1 = (itemId: number): void => {
-    setSyncing(true)
-    
-    if (video1Ref.current && video2Ref.current) {
-      
-      video1Ref.current.pause();
-      video2Ref.current.pause();
-    }
-    setVideoState((prevState: any) => ({
+    setSyncing(true);
+    const currentTime = video1Ref.current?.currentTime || 0;
+
+    setVideoState(prevState => ({
       ...prevState,
-      currentSelection: { bundleId: prevState.currentSelection.bundleId, itemId }
-    }));
-    setVideo2(videoState?.bundles?.[videoState?.currentSelection?.bundleId]?.items?.[itemId]?.video)
-    
-    if (video1Ref.current && video2Ref.current) {
-      const currentTime = video1Ref.current.currentTime; // Get the current playback time
-
-     // Sync the current time for both videos
-     video1Ref.current.currentTime = currentTime;
-     video2Ref.current.currentTime = currentTime;
-
-    }
-     setTimeout(() => {
-       if (video1Ref.current && video2Ref.current) {
-         
-   
-
-        // Play both videos
-        video1Ref.current.play();
-        video2Ref.current.play();
-        setSyncing(false)
-
+      currentSelection: { 
+        bundleId: prevState.currentSelection.bundleId, 
+        itemId 
       }
-    }, 1000); // Small delay to ensure refs are updated
+    }));
 
-  }
+    const newVideo = videoState.bundles[videoState.currentSelection.bundleId].items[itemId].video;
+    setVideo2(newVideo);
+
+    // Wait for the new video to load
+    setTimeout(() => {
+      if (video1Ref.current && video2Ref.current) {
+        video2Ref.current.currentTime = currentTime;
+        Promise.all([
+          video1Ref.current.play(),
+          video2Ref.current.play()
+        ]).catch(error => console.error("Error playing videos:", error));
+        setSyncing(false);
+      }
+    }, 500);
+  };
 
   useEffect(() => {
     // Initial video and background setup
@@ -296,158 +361,155 @@ const BgReplace = () => {
     }
   }, [video1]);
 
+  // Update video sync logic with better buffering handling
   useEffect(() => {
+    const video1Element = video1Ref.current;
+    const video2Element = video2Ref.current;
+
+    if (!video1Element || !video2Element) return;
+
     const syncVideos = () => {
-      if (video1Ref.current && video2Ref.current) {
-        const time1 = video1Ref.current.currentTime;
-        const time2 = video2Ref.current.currentTime;
-        const timeDiff = Math.abs(time1 - time2);
+      if (!video1Element || !video2Element || syncing) return;
 
-        // If videos are out of sync by more than 0.1 seconds
-        if (timeDiff > 0.1) {
-          video2Ref.current.currentTime = time1;
-        }
-
-        // Update progress
-        const duration = video1Ref.current.duration || 1;
-        setProgress((time1 / duration) * 100);
+      const timeDiff = Math.abs(video1Element.currentTime - video2Element.currentTime);
+      if (timeDiff > 0.05) {
+        video2Element.currentTime = video1Element.currentTime;
       }
+
+      setProgress((video1Element.currentTime / (video1Element.duration || 1)) * 100);
     };
 
-    const handleVideoEnd = () => {
-      if (video1Ref.current && video2Ref.current) {
-        // Reset both videos to start
-        video1Ref.current.currentTime = 0;
-        video2Ref.current.currentTime = 0;
-        
-        // Play both videos
-        Promise.all([
-          video1Ref.current.play(),
-          video2Ref.current.play()
-        ]).catch(error => console.log("Error restarting videos:", error));
-      }
-    };
-
-    const handleVideoEvents = (event: string) => {
-      if (!video1Ref.current || !video2Ref.current) return;
+    const handleVideoEvent = async (event: string) => {
+      if (!video1Element || !video2Element) return;
 
       switch (event) {
         case 'play':
-          video2Ref.current.play();
-          syncVideos();
+          try {
+            await Promise.all([video1Element.play(), video2Element.play()]);
+          } catch (error) {
+            console.error('Error playing videos:', error);
+          }
           break;
         case 'pause':
-          video2Ref.current.pause();
-          syncVideos();
+          video1Element.pause();
+          video2Element.pause();
           break;
         case 'seeking':
-          video2Ref.current.currentTime = video1Ref.current.currentTime;
+          setSyncing(true);
+          video2Element.currentTime = video1Element.currentTime;
+          setSyncing(false);
           break;
         case 'waiting':
-          video2Ref.current.pause();
+          video1Element.pause();
+          video2Element.pause();
+          setSyncing(true);
           break;
         case 'playing':
-          video2Ref.current.play();
-          syncVideos();
+          if (syncing) {
+            try {
+              video2Element.currentTime = video1Element.currentTime;
+              await Promise.all([video1Element.play(), video2Element.play()]);
+              setSyncing(false);
+            } catch (error) {
+              console.error('Error resuming videos:', error);
+            }
+          }
           break;
         case 'ended':
-          handleVideoEnd();
+          video1Element.currentTime = 0;
+          video2Element.currentTime = 0;
+          try {
+            await Promise.all([video1Element.play(), video2Element.play()]);
+          } catch (error) {
+            console.error('Error restarting videos:', error);
+          }
           break;
       }
     };
 
-    if (video1Ref.current && video2Ref.current) {
-      const video1 = video1Ref.current;
-      const video2 = video2Ref.current;
+    const events = ['play', 'pause', 'seeking', 'waiting', 'playing', 'ended'];
+    const eventListeners = events.map(event => {
+      const listener = () => handleVideoEvent(event);
+      video1Element.addEventListener(event, listener);
+      return { event, listener };
+    });
 
-      video1.playbackRate = 1;
-      video2.playbackRate = 1;
+    const syncInterval = setInterval(syncVideos, 50);
 
-      // Add event listeners with better error handling
-      const events = ['play', 'pause', 'seeking', 'waiting', 'playing', 'ended'];
-      events.forEach(event => {
-        video1.addEventListener(event, () => handleVideoEvents(event));
+    return () => {
+      eventListeners.forEach(({ event, listener }) => {
+        video1Element?.removeEventListener(event, listener);
       });
+      clearInterval(syncInterval);
+    };
+  }, [syncing]);
 
-      // Sync videos every 100ms
-      const syncInterval = setInterval(syncVideos, 100);
-
-      // Cleanup function
-      return () => {
-        events.forEach(event => {
-          video1.removeEventListener(event, () => handleVideoEvents(event));
-        });
-        clearInterval(syncInterval);
-      };
-    }
-  }, []);
-
-  // Modify the generateThumbnail function to handle loading better
-  const generateThumbnail = (videoUrl: string): Promise<string> => {
-    return new Promise((resolve) => {
+  // Update thumbnail generation to maintain aspect ratio
+  const generateThumbnail = async (videoUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
       const video = document.createElement('video');
       video.src = videoUrl;
       video.crossOrigin = 'anonymous';
       video.preload = 'metadata';
-      
+
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Thumbnail generation timeout'));
+      }, 10000);
+
       video.onloadedmetadata = () => {
-        video.currentTime = 0;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          clearTimeout(timeoutId);
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+
+        // Set canvas dimensions to match video aspect ratio
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        const maxWidth = 320;
+        const maxHeight = 180;
+        let width = video.videoWidth;
+        let height = video.videoHeight;
+
+        if (width > maxWidth) {
+          width = maxWidth;
+          height = width / aspectRatio;
+        }
+
+        if (height > maxHeight) {
+          height = maxHeight;
+          width = height * aspectRatio;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Capture the first frame
+        video.currentTime = 0.1; // Slightly offset to ensure the frame is loaded
       };
-      
+
       video.onseeked = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth || 640;  // fallback width
-        canvas.height = video.videoHeight || 360; // fallback height
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL('image/jpeg', 0.8));
+          clearTimeout(timeoutId);
+          resolve(canvas.toDataURL('image/jpeg', 0.85)); // Increased quality
         } else {
-          resolve(''); // Fallback if context creation fails
+          clearTimeout(timeoutId);
+          reject(new Error('Failed to get canvas context'));
         }
       };
 
-      video.onerror = () => {
-        console.error('Error loading video for thumbnail:', videoUrl);
-        resolve(''); // Fallback if video loading fails
+      video.onerror = (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
       };
     });
   };
 
-  // Update the loadThumbnails function to handle errors better
-  useEffect(() => {
-    const loadThumbnails = async () => {
-      try {
-        console.log('Starting thumbnail generation...');
-        const thumbnails = {
-          bundle0: {
-            original: await generateThumbnail(videoState.bundles[0].video1),
-            modified: await generateThumbnail(videoState.bundles[0].items[0].video),
-          },
-          bundle1: {
-            original: await generateThumbnail(videoState.bundles[1].video1),
-            modified: await generateThumbnail(videoState.bundles[1].items[0].video),
-          },
-          bundle2: {
-            original: await generateThumbnail(videoState.bundles[2].video1),
-            modified: await generateThumbnail(videoState.bundles[2].items[0].video),
-          },
-          bundle3: {
-            original: await generateThumbnail(videoState.bundles[3].video1),
-            modified: await generateThumbnail(videoState.bundles[3].items[0].video),
-          },
-        };
-        console.log('Thumbnails generated:', thumbnails);
-        setVideoThumbnails(thumbnails);
-      } catch (error) {
-        console.error('Error generating thumbnails:', error);
-      }
-    };
-
-    loadThumbnails();
-  }, [videoState.bundles]); // Add dependency on bundles to ensure thumbnails update if videos change
-
-  // Update the thumbnail display JSX to include loading states and error handling
+  // Update the thumbnail display component to maintain aspect ratio
   const renderThumbnailPair = (bundleIndex: number, onClick: () => void): JSX.Element => {
     const bundleKey = `bundle${bundleIndex}` as keyof typeof videoThumbnails;
     const thumbnails = videoThumbnails[bundleKey];
@@ -456,25 +518,29 @@ const BgReplace = () => {
       <div className="w-1/2 p-1 relative cursor-pointer hover:opacity-90" onClick={onClick}>
         <div className="flex h-full bg-gray-800">
           {thumbnails.original ? (
-            <img 
-              className="w-1/2 h-full object-cover" 
-              src={thumbnails.original} 
-              alt={`Original video ${bundleIndex + 1}`}
-            />
+            <div className="w-1/2 h-full flex items-center justify-center overflow-hidden">
+              <img 
+                className="w-full h-full object-contain" 
+                src={thumbnails.original} 
+                alt={`Original video ${bundleIndex + 1}`}
+              />
+            </div>
           ) : (
             <div className="w-1/2 h-full flex items-center justify-center bg-gray-700">
-              Loading...
+              <div className="animate-pulse">Loading...</div>
             </div>
           )}
           {thumbnails.modified ? (
-            <img 
-              className="w-1/2 h-full object-cover" 
-              src={thumbnails.modified} 
-              alt={`Modified video ${bundleIndex + 1}`}
-            />
+            <div className="w-1/2 h-full flex items-center justify-center overflow-hidden">
+              <img 
+                className="w-full h-full object-contain" 
+                src={thumbnails.modified} 
+                alt={`Modified video ${bundleIndex + 1}`}
+              />
+            </div>
           ) : (
             <div className="w-1/2 h-full flex items-center justify-center bg-gray-700">
-              Loading...
+              <div className="animate-pulse">Loading...</div>
             </div>
           )}
         </div>
@@ -484,6 +550,45 @@ const BgReplace = () => {
       </div>
     );
   };
+
+  // Add play/pause toggle function
+  const togglePlayPause = async () => {
+    if (!video1Ref.current || !video2Ref.current) return;
+    
+    try {
+      if (isPlaying) {
+        video1Ref.current.pause();
+        video2Ref.current.pause();
+      } else {
+        await Promise.all([
+          video1Ref.current.play(),
+          video2Ref.current.play()
+        ]);
+      }
+      setIsPlaying(!isPlaying);
+    } catch (error) {
+      console.error('Error toggling play/pause:', error);
+    }
+  };
+
+  // Update video sync effect to handle play state
+  useEffect(() => {
+    const video1Element = video1Ref.current;
+    const video2Element = video2Ref.current;
+
+    if (!video1Element || !video2Element) return;
+
+    const handlePause = () => setIsPlaying(false);
+    const handlePlay = () => setIsPlaying(true);
+
+    video1Element.addEventListener('pause', handlePause);
+    video1Element.addEventListener('play', handlePlay);
+
+    return () => {
+      video1Element.removeEventListener('pause', handlePause);
+      video1Element.removeEventListener('play', handlePlay);
+    };
+  }, []);
 
   return (
     <>
@@ -541,7 +646,7 @@ const BgReplace = () => {
               className="absolute h-full"
               itemOne={
                 <div className="relative w-full h-full">
-                  {videosLoading && (
+                  {(!thumbnailsLoaded || videosLoading) && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <Lottie
                         options={defaultOptions}
@@ -552,11 +657,12 @@ const BgReplace = () => {
                   )}
                   <video
                     className="w-full h-full object-cover"
-                    src={video1}
-                    autoPlay
+                    src={thumbnailsLoaded ? video1 : undefined}
+                    autoPlay={false}
                     muted
                     ref={video1Ref}
                     onLoadedData={() => handleVideoLoad('video1')}
+                    onError={(e) => handleVideoError(e.error)}
                   >
                     Your browser does not support the video tag.
                   </video>
@@ -564,7 +670,7 @@ const BgReplace = () => {
               }
               itemTwo={
                 <div className="relative w-full h-full">
-                  {videosLoading && (
+                  {(!thumbnailsLoaded || videosLoading) && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <Lottie
                         options={defaultOptions}
@@ -575,11 +681,12 @@ const BgReplace = () => {
                   )}
                   <video
                     className="w-full h-full object-cover"
-                    src={video2}
-                    autoPlay
+                    src={thumbnailsLoaded ? video2 : undefined}
+                    autoPlay={false}
                     muted
                     ref={video2Ref}
                     onLoadedData={() => handleVideoLoad('video2')}
+                    onError={(e) => handleVideoError(e.error)}
                   >
                     Your browser does not support the video tag.
                   </video>
@@ -599,6 +706,24 @@ const BgReplace = () => {
                   style={{ width: `${progress}%` }}
                 ></div>
               </div>
+              
+              {/* Add play button before the "Apply Backgrounds" text */}
+              <div 
+                className="flex items-center justify-center cursor-pointer bg-white/30 backdrop-blur-md border border-white/20 rounded-full p-2 hover:bg-white/50 transition-all"
+                onClick={togglePlayPause}
+              >
+                {isPlaying ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+              </div>
+
               <span className="text-lg font-semibold text-center text-white bg-black/50 p-2 rounded w-full max-w-full break-words">Apply Backgrounds</span>
 
               <div className='flex gap-5 border rounded-md'>
